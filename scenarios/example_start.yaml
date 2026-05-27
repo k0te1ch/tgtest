@@ -1,0 +1,35 @@
+# Example scenario. Copy this as a template for your own tests.
+# `bot` is optional — if omitted it uses TG_DEFAULT_BOT from your .env.
+name: Start command shows main menu
+bot: "@my_bot"
+timeout: 15
+steps:
+  # Send a command (the engine adds the leading "/" if you omit it).
+  - command: start
+
+  # Wait for the reply and assert on its text + inline buttons.
+  - expect:
+      contains: "Welcome"
+      buttons:
+        - "Settings"
+        - "Help"
+
+  # Click an inline button by its visible label.
+  - click: "Settings"
+
+  # Many bots edit the same message after a button press.
+  - expect_edit:
+      icontains: "settings"
+
+  # Plain text round-trip with a regex assertion.
+  - send: "ping"
+  - expect:
+      regex: "^pong"
+
+---
+# A second scenario in the same file (YAML --- separator). One file = a suite.
+name: Unknown command is rejected
+steps:
+  - send: "/definitely_not_a_command"
+  - expect:
+      icontains: "unknown"

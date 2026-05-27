@@ -1,0 +1,21 @@
+# YAML version of the same E2E flow — uses TG_DEFAULT_BOT (the test bot).
+name: Demo bot start + settings flow
+timeout: 15
+steps:
+  - command: start
+  - expect:
+      contains: "Welcome"
+      buttons: ["Settings", "Help"]
+  - click: "Settings"
+  - expect_edit:
+      icontains: "settings"
+  - send: "ping"
+  - expect:
+      equals: "pong"
+
+---
+name: Unknown command is rejected
+steps:
+  - send: "/nope"
+  - expect:
+      icontains: "unknown"
