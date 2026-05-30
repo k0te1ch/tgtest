@@ -6,6 +6,7 @@ Requires (in the environment / .env):
   - TG_API_ID / TG_API_HASH / TG_SESSION : tgtest user-client credentials.
   - TG_DEFAULT_BOT : the @username of that same test bot.
 """
+
 from __future__ import annotations
 
 import os

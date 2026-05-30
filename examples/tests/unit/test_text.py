@@ -1,4 +1,5 @@
 """Unit tests for the demo bot's pure logic — no Telegram, no aiogram needed."""
+
 from examples.bot import text
 
 

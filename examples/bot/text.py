@@ -4,6 +4,7 @@ Keeping the decision logic and message text here (with no aiogram imports)
 means it can be covered by fast unit tests, while ``app.py`` only wires these
 into handlers. This is the split that lets unit and E2E tests coexist.
 """
+
 from __future__ import annotations
 
 WELCOME = "Welcome to the demo bot!"

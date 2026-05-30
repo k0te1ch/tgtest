@@ -5,6 +5,7 @@ Telethon Message. It returns None on success or a human-readable failure
 reason string. Keeping failures as strings (rather than raising) lets the
 caller assemble a single rich StepError with full context.
 """
+
 from __future__ import annotations
 
 import re
@@ -16,7 +17,7 @@ _TEXT_KEYS = ("equals", "contains", "icontains", "regex", "iregex", "not_contain
 
 def _message_text(message) -> str:
     """Best-effort textual content of a message (text, or media caption)."""
-    return (getattr(message, "text", None) or getattr(message, "message", None) or "")
+    return getattr(message, "text", None) or getattr(message, "message", None) or ""
 
 
 def button_texts(message) -> list[str]:
@@ -41,9 +42,9 @@ class Matcher:
     not_contains: str | None = None
     regex: str | None = None
     iregex: str | None = None
-    buttons: list[str] | None = None          # buttons that must all be present
-    buttons_exact: list[str] | None = None     # full keyboard must equal this set/order
-    has_buttons: bool | None = None            # assert presence/absence of any keyboard
+    buttons: list[str] | None = None  # buttons that must all be present
+    buttons_exact: list[str] | None = None  # full keyboard must equal this set/order
+    has_buttons: bool | None = None  # assert presence/absence of any keyboard
     _raw: dict = field(default_factory=dict, repr=False)
 
     @classmethod
@@ -61,8 +62,15 @@ class Matcher:
                 f"expect must be a string or mapping, got {type(spec).__name__}"
             )
         known = {
-            "equals", "contains", "icontains", "not_contains", "regex", "iregex",
-            "buttons", "buttons_exact", "has_buttons",
+            "equals",
+            "contains",
+            "icontains",
+            "not_contains",
+            "regex",
+            "iregex",
+            "buttons",
+            "buttons_exact",
+            "has_buttons",
         }
         unknown = set(spec) - known
         if unknown:

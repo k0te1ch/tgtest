@@ -4,6 +4,7 @@ Mirrors the project template's `Settings(BaseSettings)` pattern. All tgtest
 variables share the ``TG_`` prefix (e.g. ``TG_API_ID`` -> ``api_id``), so both
 the CLI runner and the pytest plugin get identical, validated config.
 """
+
 from __future__ import annotations
 
 from pydantic import ValidationError

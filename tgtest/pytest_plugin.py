@@ -20,6 +20,7 @@ A `run_yaml` fixture is also provided to drive YAML scenarios from pytest:
     async def test_scenarios(run_yaml):
         await run_yaml("scenarios/start.yaml")
 """
+
 from __future__ import annotations
 
 import pytest
@@ -47,7 +48,9 @@ async def tester(tg_config):
 @pytest_asyncio.fixture
 async def run_yaml(tester):
     """Return an async callable that runs one or more YAML scenario paths."""
+
     async def _run(*paths: str):
         for sc in load_scenarios(list(paths)):
             await run_scenario(tester, sc)
+
     return _run

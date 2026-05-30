@@ -1,4 +1,5 @@
 """Logging setup, modeled on the project template's rotating-file logger."""
+
 from __future__ import annotations
 
 import logging
