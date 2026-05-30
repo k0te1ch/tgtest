@@ -4,10 +4,12 @@ Discovers YAML scenarios, runs them against the configured bot, and prints a
 per-scenario PASS/FAIL summary. Exit code is non-zero if any scenario fails so
 it slots into CI.
 """
+
 from __future__ import annotations
 
 import argparse
 import asyncio
+import logging
 import sys
 import time
 
@@ -19,6 +21,8 @@ from .engine import run_scenario
 from .exceptions import StepError, ScenarioError
 
 GREEN, RED, DIM, BOLD, RESET = "\033[32m", "\033[31m", "\033[2m", "\033[1m", "\033[0m"
+
+_log = logging.getLogger(__name__)
 
 
 def _c(text: str, color: str, use_color: bool) -> str:
@@ -82,12 +86,12 @@ def main(argv: list[str] | None = None) -> int:
         try:
             config = Settings.load(env_file=args.env)
         except RuntimeError as exc:
-            print(f"config error: {exc}", file=sys.stderr)
+            _log.error("config error: %s", exc)
             return 2
         try:
             scenarios = load_scenarios(args.paths)
         except ScenarioError as exc:
-            print(f"scenario error: {exc}", file=sys.stderr)
+            _log.error("scenario error: %s", exc)
             return 2
         if args.bot:
             for sc in scenarios:
