@@ -5,9 +5,18 @@ repos:
       - id: end-of-file-fixer
       - id: trailing-whitespace
       - id: check-yaml
+        # tgtest scenario files hold several scenarios per file, separated
+        # by the YAML `---` document marker, so allow multi-document streams.
+        args: [--allow-multiple-documents]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.14
     hooks:
       - id: ruff
         args: [.]
+
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v4.4.1
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
