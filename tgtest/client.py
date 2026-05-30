@@ -13,6 +13,7 @@ Typical Python usage:
             await chat.click("Settings")
             await chat.expect_edit(contains="Settings menu")
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -76,7 +77,6 @@ class _Chat:
         self._default_timeout = default_timeout
         self.last = None  # most recent Message we received
 
-    # --- sending --------------------------------------------------------
     async def send(self, text: str):
         """Send a plain text message to the bot."""
         return await self._conv.send_message(text)
@@ -87,7 +87,6 @@ class _Chat:
             cmd = "/" + cmd
         return await self._conv.send_message(cmd)
 
-    # --- receiving ------------------------------------------------------
     async def get_reply(self, timeout: float | None = None):
         """Wait for and return the next reply message from the bot."""
         try:
@@ -158,9 +157,13 @@ class _Chat:
                     f"missing buttons {missing}\n  actual buttons: {actual}"
                 )
 
-    # --- interacting ----------------------------------------------------
-    async def click(self, text: str | None = None, *, index: int | None = None,
-                     data: str | None = None):
+    async def click(
+        self,
+        text: str | None = None,
+        *,
+        index: int | None = None,
+        data: str | None = None,
+    ):
         """Click an inline button on the current message.
 
         Identify the button by visible `text`, by 0-based `index`, or by raw
@@ -177,7 +180,6 @@ class _Chat:
             return await self.last.click(index)
         raise ValueError("click requires one of: text, index, data")
 
-    # --- internal -------------------------------------------------------
     def _assert(self, matcher: Matcher, message):
         reason = matcher.check(message)
         if reason is not None:

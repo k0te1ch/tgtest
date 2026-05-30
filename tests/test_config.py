@@ -1,4 +1,5 @@
 """Unit tests for Settings loading (no network, safe for CI)."""
+
 import pytest
 
 from tgtest.config import Settings

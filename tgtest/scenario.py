@@ -17,6 +17,7 @@ A scenario file looks like:
 A single file may hold multiple scenarios using YAML's `---` document
 separator, so one file can be a whole suite.
 """
+
 from __future__ import annotations
 
 import glob
@@ -30,8 +31,14 @@ from .exceptions import ScenarioError
 # Recognised step keys. Each step dict must have exactly one *action* key
 # (plus optional modifiers like `timeout`).
 _ACTION_KEYS = {
-    "send", "command", "expect", "expect_edit", "expect_no_reply",
-    "expect_buttons", "click", "sleep",
+    "send",
+    "command",
+    "expect",
+    "expect_edit",
+    "expect_no_reply",
+    "expect_buttons",
+    "click",
+    "sleep",
 }
 _MODIFIER_KEYS = {"timeout", "exact", "index", "data", "note", "within"}
 
@@ -123,8 +130,9 @@ def load_scenarios(paths: list[str]) -> list[Scenario]:
     for p in paths:
         if os.path.isdir(p):
             for ext in ("yaml", "yml"):
-                files.extend(sorted(glob.glob(os.path.join(p, "**", f"*.{ext}"),
-                                              recursive=True)))
+                files.extend(
+                    sorted(glob.glob(os.path.join(p, "**", f"*.{ext}"), recursive=True))
+                )
         elif any(ch in p for ch in "*?[]"):
             files.extend(sorted(glob.glob(p, recursive=True)))
         else:

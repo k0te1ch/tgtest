@@ -4,6 +4,7 @@ Run this once: `python login.py`. Telethon will ask for the code Telegram
 sends you (and your 2FA password if enabled), then save an authorized session
 file. After that, test runs use the session non-interactively.
 """
+
 import asyncio
 
 from tgtest.client import build_client

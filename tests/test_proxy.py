@@ -1,4 +1,5 @@
 """Unit tests for proxy URL parsing (no network, safe for CI)."""
+
 import pytest
 
 from tgtest.proxy import parse_proxy

@@ -1,4 +1,5 @@
 """Unit tests for the matcher logic (no network, safe for CI)."""
+
 from tgtest.matchers import Matcher, button_texts
 
 

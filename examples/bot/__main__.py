@@ -3,6 +3,7 @@
 This is what the E2E test fixture launches as a subprocess. In your own repo
 the equivalent would simply be ``python -m bot``.
 """
+
 import asyncio
 import os
 

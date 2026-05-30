@@ -16,8 +16,13 @@ class StepError(TgTestError):
     report exactly which step in which scenario broke.
     """
 
-    def __init__(self, message: str, *, step_index: int | None = None,
-                 step_desc: str | None = None):
+    def __init__(
+        self,
+        message: str,
+        *,
+        step_index: int | None = None,
+        step_desc: str | None = None,
+    ):
         self.step_index = step_index
         self.step_desc = step_desc
         super().__init__(message)

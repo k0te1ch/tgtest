@@ -16,6 +16,7 @@ Examples:
   mtproxy://SECRET@host:443        (secret in the userinfo)
   mtproxy://host:443?secret=SECRET (secret in the query)
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass

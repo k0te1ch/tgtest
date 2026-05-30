@@ -1,4 +1,5 @@
 """aiogram wiring for the demo bot. Pure logic lives in ``text.py``."""
+
 from __future__ import annotations
 
 from aiogram import Dispatcher, F

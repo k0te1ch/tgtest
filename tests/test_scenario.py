@@ -1,4 +1,5 @@
 """Unit tests for YAML scenario parsing (no network, safe for CI)."""
+
 import pytest
 
 from tgtest.scenario import load_scenario, load_scenarios
@@ -12,7 +13,9 @@ def _write(tmp_path, text, name="s.yaml"):
 
 
 def test_parses_single_scenario(tmp_path):
-    path = _write(tmp_path, """
+    path = _write(
+        tmp_path,
+        """
 name: Demo
 bot: "@b"
 timeout: 5
@@ -21,7 +24,8 @@ steps:
   - expect:
       contains: Hi
   - click: "Go"
-""")
+""",
+    )
     [sc] = load_scenario(path)
     assert sc.name == "Demo"
     assert sc.bot == "@b"
@@ -30,7 +34,9 @@ steps:
 
 
 def test_multi_document_file(tmp_path):
-    path = _write(tmp_path, """
+    path = _write(
+        tmp_path,
+        """
 name: One
 steps:
   - send: a
@@ -38,7 +44,8 @@ steps:
 name: Two
 steps:
   - send: b
-""")
+""",
+    )
     scs = load_scenario(path)
     assert [s.name for s in scs] == ["One", "Two"]
 
