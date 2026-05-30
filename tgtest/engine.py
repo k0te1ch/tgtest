@@ -4,6 +4,7 @@ The engine maps each YAML step to a call on the `_Chat` helper. All assertion
 failures and timeouts are wrapped in StepError with the offending step's index
 and description, so the runner can pinpoint failures.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -14,37 +15,59 @@ from .scenario import Scenario, Step
 from .exceptions import StepError
 
 
-async def _run_step(chat, step: Step):
-    action, value, opts = step.action, step.value, step.options
-    timeout = float(opts["timeout"]) if "timeout" in opts else None
-
-    if action == "send":
+def _build_handlers(chat, value, opts, timeout) -> dict:
+    async def _send():
         await chat.send(str(value))
-    elif action == "command":
+
+    async def _command():
         await chat.command(str(value))
-    elif action == "sleep":
+
+    async def _sleep():
         await asyncio.sleep(float(value))
-    elif action == "expect":
+
+    async def _expect():
         message = await chat.get_reply(timeout=timeout)
         reason = Matcher.from_spec(value).check(message)
         if reason:
             raise AssertionError(reason)
-    elif action == "expect_edit":
+
+    async def _expect_edit():
         await chat.expect_edit(timeout=timeout, **(_as_spec(value)))
-    elif action == "expect_no_reply":
+
+    async def _expect_no_reply():
         within = float(value) if value is not None else float(opts.get("within", 2.0))
         await chat.expect_no_reply(within=within)
-    elif action == "expect_buttons":
+
+    async def _expect_buttons():
         labels = value if isinstance(value, list) else [value]
         chat.expect_buttons(*labels, exact=bool(opts.get("exact", False)))
-    elif action == "click":
+
+    async def _click():
         await chat.click(
             text=value if isinstance(value, str) else None,
             index=opts.get("index"),
             data=opts.get("data"),
         )
-    else:  # pragma: no cover - parser guarantees valid actions
+
+    return {
+        "send": _send,
+        "command": _command,
+        "sleep": _sleep,
+        "expect": _expect,
+        "expect_edit": _expect_edit,
+        "expect_no_reply": _expect_no_reply,
+        "expect_buttons": _expect_buttons,
+        "click": _click,
+    }
+
+
+async def _run_step(chat, step: Step):
+    action, value, opts = step.action, step.value, step.options
+    timeout = float(opts["timeout"]) if "timeout" in opts else None
+    handler = _build_handlers(chat, value, opts, timeout).get(action)
+    if handler is None:  # pragma: no cover - parser guarantees valid actions
         raise StepError(f"unknown action {action!r}", step_index=step.index)
+    await handler()
 
 
 def _as_spec(value):
@@ -71,5 +94,6 @@ async def run_scenario(tester: BotTester, scenario: Scenario):
             except Exception as exc:  # surface unexpected errors with step context
                 raise StepError(
                     f"{type(exc).__name__}: {exc}",
-                    step_index=step.index, step_desc=step.describe(),
+                    step_index=step.index,
+                    step_desc=step.describe(),
                 ) from exc
