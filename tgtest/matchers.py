@@ -22,16 +22,58 @@ def _message_text(message) -> str:
 
 def button_texts(message) -> list[str]:
     """Flatten an inline/reply keyboard into a list of button label strings."""
-    labels: list[str] = []
-    buttons = getattr(message, "buttons", None)
-    if not buttons:
-        return labels
-    for row in buttons:
+    return [text for text, _ in keyboard(message)]
+
+
+def keyboard(message) -> list[tuple[str, str | None]]:
+    """Flatten a keyboard into (label, callback data) pairs.
+
+    Callback data is decoded to text; buttons without it (URL, reply
+    keyboards) get None.
+    """
+    pairs: list[tuple[str, str | None]] = []
+    for row in getattr(message, "buttons", None) or []:
         for btn in row:
             text = getattr(btn, "text", None)
-            if text is not None:
-                labels.append(text)
-    return labels
+            if text is None:
+                continue
+            data = getattr(btn, "data", None)
+            if isinstance(data, bytes):
+                data = data.decode("utf-8", errors="replace")
+            pairs.append((text, data))
+    return pairs
+
+
+def _button_matches(expected, text: str, data: str | None) -> bool:
+    """`expected` is a label, or a mapping with text / data / data_regex."""
+    if isinstance(expected, str):
+        return text == expected
+    if "text" in expected and text != expected["text"]:
+        return False
+    if "data" in expected and data != expected["data"]:
+        return False
+    if "data_regex" in expected and (
+        data is None or not re.search(expected["data_regex"], data)
+    ):
+        return False
+    return True
+
+
+def missing_buttons(expected: list, message) -> list:
+    """The entries of `expected` that no button on `message` satisfies."""
+    actual = keyboard(message)
+    return [
+        want
+        for want in expected
+        if not any(_button_matches(want, text, data) for text, data in actual)
+    ]
+
+
+def describe_keyboard(message) -> str:
+    return ", ".join(
+        f"{text!r}" if data is None else f"{text!r} ({data!r})"
+        for text, data in keyboard(message)
+    )
 
 
 @dataclass
@@ -42,7 +84,8 @@ class Matcher:
     not_contains: str | None = None
     regex: str | None = None
     iregex: str | None = None
-    buttons: list[str] | None = None  # buttons that must all be present
+    # buttons that must all be present: labels, or {text, data, data_regex}
+    buttons: list | None = None
     buttons_exact: list[str] | None = None  # full keyboard must equal this set/order
     has_buttons: bool | None = None  # assert presence/absence of any keyboard
     _raw: dict = field(default_factory=dict, repr=False)
@@ -90,9 +133,7 @@ class Matcher:
 
     def check(self, message) -> str | None:
         """Return None if the message satisfies every clause, else a reason."""
-        return self._check_text(_message_text(message)) or self._check_buttons(
-            button_texts(message)
-        )
+        return self._check_text(_message_text(message)) or self._check_buttons(message)
 
     def _check_text(self, text: str) -> str | None:
         if self.equals is not None and text != self.equals:
@@ -111,16 +152,20 @@ class Matcher:
             return f"text does not match regex (ci) {self.iregex!r}\n  actual: {text!r}"
         return None
 
-    def _check_buttons(self, actual: list[str]) -> str | None:
+    def _check_buttons(self, message) -> str | None:
+        actual = button_texts(message)
         if self.has_buttons is not None and bool(actual) != self.has_buttons:
             return (
                 f"has_buttons expected {self.has_buttons}, "
                 f"got {bool(actual)} (buttons={actual})"
             )
         if self.buttons is not None:
-            missing = [b for b in self.buttons if b not in actual]
+            missing = missing_buttons(self.buttons, message)
             if missing:
-                return f"missing buttons {missing}\n  actual buttons: {actual}"
+                return (
+                    f"missing buttons {missing}\n"
+                    f"  actual buttons: {describe_keyboard(message)}"
+                )
         if self.buttons_exact is not None and actual != list(self.buttons_exact):
             return (
                 f"buttons differ\n  expected: {list(self.buttons_exact)}\n"
