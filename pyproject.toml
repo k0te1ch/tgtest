@@ -1,6 +1,6 @@
 [project]
 name = "tgtest"
-version = "0.1.0"
+version = "0.2.0"
 description = "End-to-end testing platform for Telegram bots (Telethon-driven, YAML + pytest)."
 authors = [{ name = "k0te1ch", email = "khvostov40@gmail.com" }]
 readme = "README.md"
