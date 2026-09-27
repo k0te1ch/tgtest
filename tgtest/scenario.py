@@ -36,6 +36,7 @@ _ACTION_KEYS = {
     "command",
     "expect",
     "expect_edit",
+    "wait_until",
     "expect_no_reply",
     "expect_buttons",
     "click",

@@ -19,6 +19,7 @@ Source: [`tgtest/config.py`](../tgtest/config.py).
 | `TG_DEFAULT_BOT` | `default_bot` | str | `None` | no | Bot used when a test/scenario names none. |
 | `TG_PROXY` | `proxy` | str | `None` | no | Proxy URL for the user client (see [Proxy](#proxy)). |
 | `TG_TIMEOUT` | `timeout` | float | `15.0` | no | Default per-step reply timeout (seconds). |
+| `TG_POLL_INTERVAL` | `poll_interval` | float | `0.5` | no | How often `expect_edit` / `wait_until` re-read the message (seconds). |
 | `TG_CONNECT_TIMEOUT` | `connect_timeout` | float | `30.0` | no | How long to wait for the connection to Telegram; on timeout the error suggests `TG_PROXY`. |
 | `TG_LANG_CODE` | `lang_code` | str | `None` (Telethon: `en`) | no | Language the test account reports; bots see it as `from_user.language_code`. |
 | `TG_SYSTEM_LANG_CODE` | `system_lang_code` | str | `TG_LANG_CODE` | no | System language reported to Telegram. |

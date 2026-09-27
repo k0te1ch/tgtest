@@ -70,7 +70,8 @@ asyncio.run(main())
 |--------|-------------|
 | `await chat.get_reply(timeout=None)` | Wait for and return the next reply; sets `chat.last`. |
 | `await chat.expect(timeout=None, **matcher)` | `get_reply` + assert; returns the message. |
-| `await chat.expect_edit(timeout=None, **matcher)` | Wait for `chat.last` to be edited, then assert. |
+| `await chat.expect_edit(timeout=None, **matcher)` | Wait until `chat.last` is edited into a matching message; edits made before the call count. |
+| `await chat.wait_until(timeout=None, **matcher)` | Wait until `chat.last` matches, edited or not (e.g. a result that arrives later). |
 | `await chat.expect_no_reply(within=2.0)` | Assert nothing arrives within `within` seconds. |
 | `chat.expect_buttons(*labels, exact=False)` | Assert the current message's buttons (sync). |
 

@@ -26,7 +26,13 @@ from telethon.sessions import StringSession
 
 from .config import Settings
 from .exceptions import ConnectError, SessionLockedError
-from .matchers import Matcher, button_texts
+from .matchers import (
+    Matcher,
+    button_texts,
+    describe_keyboard,
+    keyboard,
+    missing_buttons,
+)
 from .proxy import ProxyConfig, parse_proxy
 
 # Re-export so tests can `from tgtest import ReplyMatchError`.
@@ -123,14 +129,30 @@ async def connect(client: TelegramClient, config: Settings) -> None:
         ) from exc
 
 
+def _snapshot(message) -> tuple:
+    """What an edit can change: edit date, text and keyboard."""
+    text = getattr(message, "text", None) or getattr(message, "message", None)
+    return (getattr(message, "edit_date", None), text, tuple(keyboard(message)))
+
+
 class _Chat:
     """A live conversation with one bot. Tracks the 'current' message so that
     `click`/`expect_buttons`/`expect_edit` operate on the most recent reply."""
 
-    def __init__(self, conv, bot, default_timeout: float):
+    def __init__(
+        self,
+        conv,
+        bot,
+        default_timeout: float,
+        *,
+        client=None,
+        poll_interval: float = 0.5,
+    ):
         self._conv = conv
         self._bot = bot
         self._default_timeout = default_timeout
+        self._client = client if client is not None else getattr(conv, "_client", None)
+        self._poll_interval = poll_interval
         self.last = None  # most recent Message we received
 
     async def send(self, text: str):
@@ -175,24 +197,56 @@ class _Chat:
         return message
 
     async def expect_edit(self, timeout: float | None = None, **spec):
-        """Wait for the *current* message to be edited and assert on it.
+        """Wait until the *current* message is edited into one matching `spec`.
 
-        Bots commonly edit a message in place after an inline-button click.
+        Bots commonly edit a message in place after an inline-button click,
+        sometimes several times (progress, then result). The message is
+        re-read from Telegram, so an edit that landed before this call counts
+        too: the comparison is against the message as it was received.
         """
         if self.last is None:
             raise AssertionError("expect_edit called before any reply was received")
-        try:
-            self.last = await self._conv.get_edit(
-                self.last,
-                timeout=timeout if timeout is not None else self._default_timeout,
-            )
-        except (asyncio.TimeoutError, TelethonTimeout):
-            wait = timeout or self._default_timeout
-            raise AssertionError(
-                f"timed out after {wait}s waiting for an edit"
-            ) from None
-        self._assert(Matcher.from_spec(spec), self.last)
-        return self.last
+        before = _snapshot(self.last)
+        matcher = Matcher.from_spec(spec)
+
+        def accept(message) -> str | None:
+            if _snapshot(message) == before:
+                return "the message was not edited"
+            return matcher.check(message)
+
+        return await self._poll("an edit", accept, timeout)
+
+    async def wait_until(self, timeout: float | None = None, **spec):
+        """Wait until the current message matches `spec`, edited or not.
+
+        For results that arrive later as edits, e.g. a publish status.
+        """
+        if self.last is None:
+            raise AssertionError("wait_until called before any reply was received")
+        matcher = Matcher.from_spec(spec)
+        return await self._poll(matcher.describe(), matcher.check, timeout)
+
+    async def _poll(self, what: str, accept, timeout: float | None):
+        """Re-read the current message until `accept` returns None (no reason)."""
+        wait = timeout if timeout is not None else self._default_timeout
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + wait
+        while True:
+            message = await self._reread()
+            reason = accept(message)
+            if reason is None:
+                self.last = message
+                return message
+            remaining = deadline - loop.time()
+            if remaining <= 0:
+                raise AssertionError(
+                    f"timed out after {wait}s waiting for {what}\n  {reason}"
+                )
+            await asyncio.sleep(min(self._poll_interval, remaining))
+
+    async def _reread(self):
+        fresh = await self._client.get_messages(self._bot, ids=self.last.id)
+        return fresh if fresh is not None else self.last
 
     async def expect_no_reply(self, within: float = 2.0):
         """Assert the bot sends nothing within `within` seconds."""
@@ -204,22 +258,28 @@ class _Chat:
             f"expected no reply within {within}s but got: {msg.text!r}"
         )
 
-    def expect_buttons(self, *labels: str, exact: bool = False):
-        """Assert the current message exposes the given inline/reply buttons."""
+    def expect_buttons(self, *labels, exact: bool = False):
+        """Assert the current message exposes the given inline/reply buttons.
+
+        Each entry is a label or a mapping with `text`, `data` and/or
+        `data_regex` to check callback data too. `exact` compares labels.
+        """
         if self.last is None:
             raise AssertionError("expect_buttons called before any reply was received")
-        actual = button_texts(self.last)
         if exact:
-            if actual != list(labels):
+            actual = button_texts(self.last)
+            expected = [b if isinstance(b, str) else b.get("text") for b in labels]
+            if actual != expected:
                 raise AssertionError(
-                    f"buttons differ\n  expected: {list(labels)}\n  actual:   {actual}"
+                    f"buttons differ\n  expected: {expected}\n  actual:   {actual}"
                 )
-        else:
-            missing = [b for b in labels if b not in actual]
-            if missing:
-                raise AssertionError(
-                    f"missing buttons {missing}\n  actual buttons: {actual}"
-                )
+            return
+        missing = missing_buttons(list(labels), self.last)
+        if missing:
+            raise AssertionError(
+                f"missing buttons {missing}\n"
+                f"  actual buttons: {describe_keyboard(self.last)}"
+            )
 
     async def click(
         self,
@@ -298,4 +358,10 @@ class BotTester:
         async with self._client.conversation(
             entity, timeout=conv_timeout, total_timeout=None
         ) as conv:
-            yield _Chat(conv, entity, conv_timeout)
+            yield _Chat(
+                conv,
+                entity,
+                conv_timeout,
+                client=self._client,
+                poll_interval=self._config.poll_interval,
+            )

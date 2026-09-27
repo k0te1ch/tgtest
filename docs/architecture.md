@@ -50,8 +50,11 @@ which provides ordered, timeout-aware access to one chat:
 - `conv.send_message(...)` — send.
 - `conv.get_response(timeout=)` — next incoming message (powers `get_reply` /
   `expect`).
-- `conv.get_edit(message, timeout=)` — wait for a specific message to be edited
-  (powers `expect_edit`).
+- Edits are not read through `conv.get_edit`: it only reports edits of
+  messages newer than the one passed, and misses an edit that lands before
+  the call. `expect_edit` and `wait_until` re-read the current message with
+  `client.get_messages` every `TG_POLL_INTERVAL` seconds and compare it with
+  the message as it was received.
 - `message.click(...)` — click inline/reply buttons (powers `click`).
 
 Using `Conversation` (rather than raw event handlers) gives deterministic,

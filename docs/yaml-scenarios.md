@@ -66,7 +66,8 @@ keys.
 | `send_file` | path | Send a file (audio, photo, document...). |
 | `command` | string | Send a `/command`; the leading `/` is added if missing. |
 | `expect` | matcher | Wait for the next reply, make it current, assert on it. |
-| `expect_edit` | matcher | Wait for the **current** message to be edited, assert on it. |
+| `expect_edit` | matcher | Wait until the **current** message is edited into one that matches. |
+| `wait_until` | matcher | Wait until the current message matches, edited or not (late results). |
 | `expect_no_reply` | seconds (number) | Assert nothing arrives within N seconds. |
 | `expect_buttons` | string or list | Assert the current message exposes these button labels. |
 | `click` | string (label) or empty | Click an inline button on the current message. |
@@ -78,7 +79,7 @@ These may accompany any action:
 
 | Modifier | Applies to | Meaning |
 |----------|-----------|---------|
-| `timeout` | `expect`, `expect_edit` | Override the reply timeout (seconds) for this step. |
+| `timeout` | `expect`, `expect_edit`, `wait_until` | Override the reply timeout (seconds) for this step. |
 | `exact` | `expect_buttons` | Require the keyboard to match exactly (set + order). |
 | `index` | `click` | Click the button at this 0-based position. |
 | `data` | `click` | Click the button with this callback `data`. |
@@ -136,7 +137,7 @@ given, **all** must pass.
 | `not_contains` | string | Text does **not** contain the substring. |
 | `regex` | string | `re.search` finds the pattern. |
 | `iregex` | string | Case-insensitive `regex`. |
-| `buttons` | list | All listed button labels are present (order-free). |
+| `buttons` | list | All listed buttons are present (order-free): labels, or `{text, data, data_regex}` to check callback data. |
 | `buttons_exact` | list | The whole keyboard equals this list (set + order). |
 | `has_buttons` | bool | The message has (or has no) keyboard. |
 
