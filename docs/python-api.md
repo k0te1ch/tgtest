@@ -14,7 +14,7 @@ Sources: [`tgtest/client.py`](../tgtest/client.py),
 from tgtest import (
     Settings, configure_logger,
     BotTester, ReplyMatchError,
-    GameScore, WebAppData, parse_web_app_data,
+    WebAppData, parse_web_app_data,
     Scenario, load_scenario, load_scenarios, run_scenario,
     TgTestError, ScenarioError, StepError,
 )
@@ -101,7 +101,7 @@ See [Buttons & keyboards](buttons-and-keyboards.md) for full semantics.
 | Method | Description |
 |--------|-------------|
 | `await chat.play(timeout=None)` | Press the game button of the last game message; returns the bot's URL. |
-| `await chat.high_scores(user="me", timeout=None)` | High score table of the last game message as `list[GameScore]`. |
+| `await chat.expect_game_score(exact=None, min_score=None, timeout=None)` | Wait for the next score service message of the last game; returns the score. |
 | `await chat.open_web_app(text, timeout=None)` | Open a `web_app` button of the current message; returns the URL. |
 | `await chat.open_menu_app(timeout=None)` | Open the bot's menu button Mini App; returns the URL. |
 | `await chat.open_app(short_name, start_param=None, timeout=None)` | Open `t.me/<bot>/<short_name>`; returns the URL. |

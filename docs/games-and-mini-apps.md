@@ -14,7 +14,7 @@ Sources: [`tgtest/apps.py`](../tgtest/apps.py) (games and Mini Apps),
 | Created with | @BotFather `/newgame` (gets a short name) | @BotFather `/newapp` for named apps; any HTTPS URL for buttons |
 | Arrives as | a message with a game (`sendGame`) and a **Play** button | a `web_app` button (inline or reply keyboard), the bot's menu button, or a `t.me/<bot>/<app>` link |
 | URL comes from | **the bot**: it answers the Play callback with `answerCallbackQuery(url=...)` | **Telegram**: it signs launch data and appends it to the URL fragment as `tgWebAppData` |
-| Score table | yes, `setGameScore` / `getGameHighScores` | no |
+| Scores | the bot calls `setGameScore`; the chat gets a "scored N" service message | no |
 
 So for a game tgtest checks that the bot hands out a URL; for a Mini App it
 checks that Telegram opens the configured page with the expected launch data.
@@ -28,7 +28,7 @@ values you can assert on. Failures raise `AssertionError` with the reason.
 |--------|---------|--------------|
 | `await chat.expect(game="snake")` | `Message` | The next reply must carry the game `snake`. |
 | `await chat.play(timeout=None)` | `str` | Presses the game button of the last game message (`GetBotCallbackAnswer` with `game=True`) and returns the bot's URL. |
-| `await chat.high_scores(user="me", timeout=None)` | `list[GameScore]` | `GetGameHighScores` for the last game message: rows around `user`. |
+| `await chat.expect_game_score(exact=None, min_score=None, timeout=None)` | `int` | Waits for the next score service message (`MessageActionGameScore`) of the last game and returns the score. |
 | `await chat.open_web_app(text, timeout=None)` | `str` | Opens the `web_app` button `text` of the current message. Inline buttons use `RequestWebView`, reply keyboard buttons `RequestSimpleWebView`. |
 | `await chat.open_menu_app(timeout=None)` | `str` | Opens the Mini App behind the bot's menu button (`RequestWebView` with `from_bot_menu`). |
 | `await chat.open_app(short_name, start_param=None, timeout=None)` | `str` | Opens the named Mini App `t.me/<bot>/<short_name>` (`RequestAppWebView`). |
@@ -36,8 +36,7 @@ values you can assert on. Failures raise `AssertionError` with the reason.
 | `await assert_page_loads(url, timeout=30.0)` | `None` | Opens the URL headless; fails on JS errors, HTTP errors, or no `load` in time. |
 
 "The last game message" is the most recent reply that carried a game, even if
-text replies came after it. `GameScore` has `position`, `user_id`, `name` and
-`score`. `WebAppData` has `user` (dict), `start_param`, `auth_date`,
+text replies came after it. `WebAppData` has `user` (dict), `start_param`, `auth_date`,
 `query_id` and `raw` (every field as sent, including `hash`).
 
 ```python
@@ -54,8 +53,8 @@ async def test_game(tester):
         assert url.startswith("https://game.example/")
         await assert_page_loads(url)        # optional, needs the browser extra
 
-        scores = await chat.high_scores()
-        assert scores == [] or scores[0].position == 1
+        await chat.command("score 120")      # the bot calls setGameScore
+        assert await chat.expect_game_score(min_score=100) == 120
 
 
 async def test_mini_app(tester):
@@ -72,7 +71,7 @@ async def test_mini_app(tester):
 |------|-------|-----------|
 | `expect: {game: <short_name>}` | matcher | any matcher clause |
 | `play` | empty | `url_contains`, `url_regex`, `page_loads`, `timeout` |
-| `high_scores` | empty | `min_entries`, `timeout` |
+| `expect_game_score` | score (exact) or empty | `min_score`, `timeout` |
 | `open_web_app` | button label | `url_contains`, `url_regex`, `page_loads`, `timeout` |
 | `open_menu_app` | empty | `url_contains`, `url_regex`, `page_loads`, `timeout` |
 | `open_app` | short name | `start_param`, `url_contains`, `url_regex`, `page_loads`, `timeout` |
@@ -86,7 +85,8 @@ steps:
   - play:
     url_contains: "snake"
     page_loads: true          # needs tgtest[browser]
-  - high_scores:
+  - command: score 120
+  - expect_game_score: 120
   - command: start
   - expect:
       buttons: ["Open app"]
@@ -95,6 +95,14 @@ steps:
   - open_app: arcade
     start_param: ref42
 ```
+
+## Running live
+
+The live e2e tests talk to Telegram over MTProto. On networks where Telegram is
+blocked, set `TG_PROXY` (`socks5://host:port` or `mtproxy://SECRET@host:port`),
+otherwise the connection fails with `ConnectError` after `TG_CONNECT_TIMEOUT`.
+See [Configuration](configuration.md). The browser check fetches the game or
+Mini App page directly and does not go through `TG_PROXY`.
 
 ## Optional browser check
 
@@ -114,8 +122,15 @@ in, click, or run the game; for that, write Playwright code against the URL.
 ## Limits
 
 - The game URL is whatever the bot returns; tgtest does not validate the
-  game's own signature or score reporting. Score changes (`setGameScore`)
-  happen on the bot side and show up in `high_scores`.
+  game's own signature or score reporting.
+- A user account cannot read the high score table: `messages.getGameHighScores`
+  answers "This method can only be called by a bot". Scores are visible to the
+  user only as the service message Telegram posts after the bot's
+  `setGameScore`, which is what `expect_game_score` waits for. Telethon
+  conversations do not deliver service messages, so it polls the chat history
+  (every `TG_POLL_INTERVAL`) for score messages newer than the game message and
+  the last score it returned. To check the full table, call
+  `getGameHighScores` from the bot's own tests with its token.
 - Opening a Mini App tells Telegram the user launched it. The bot may receive
   `web_app_data` or send messages as a result, so expect those in the
   conversation if your bot does that.

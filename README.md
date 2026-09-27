@@ -106,7 +106,7 @@ steps:
 | `expect_no_reply: <sec>` | Assert nothing arrives within N seconds. |
 | `click: <label>` | Click an inline button by label (or `click:` with `index:` / `data:`). |
 | `sleep: <sec>` | Pause. |
-| `play`, `high_scores` | Press a game's Play button / read its high scores ([Games & Mini Apps](docs/games-and-mini-apps.md)). |
+| `play`, `expect_game_score` | Press a game's Play button / wait for a score message ([Games & Mini Apps](docs/games-and-mini-apps.md)). |
 | `open_web_app: <label>`, `open_menu_app`, `open_app: <name>` | Open a Mini App and check its URL. |
 
 Any step may carry a `timeout:` (override) and a `note:` (shown in reports).
@@ -155,7 +155,7 @@ Unit tests for the matchers, scenario parser, and config are **not** marked
 ### `_Chat` helper API
 `send`, `command`, `get_reply`, `expect(**matcher)`, `expect_edit(**matcher)`,
 `expect_no_reply(within=)`, `expect_buttons(*labels, exact=)`,
-`click(text=/index=/data=)`, `play()`, `high_scores()`, `open_web_app(text)`,
+`click(text=/index=/data=)`, `play()`, `expect_game_score()`, `open_web_app(text)`,
 `open_menu_app()`, `open_app(short_name, start_param=)`. `chat.last` is the most
 recent `Message`.
 

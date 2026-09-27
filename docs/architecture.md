@@ -27,7 +27,7 @@ declarative steps into client calls; matchers turn replies into pass/fail.
 | [`config.py`](../tgtest/config.py) | `Settings` (pydantic-settings) — load + validate `TG_*` config. |
 | [`logger.py`](../tgtest/logger.py) | Rotating-file logger (`logs/tgtest.log`). |
 | [`client.py`](../tgtest/client.py) | `BotTester` (owns the connection) and `_Chat` (per-bot helpers). |
-| [`apps.py`](../tgtest/apps.py) | Games (`play`, `high_scores`) and Mini Apps (`open_*`, `parse_web_app_data`), mixed into `_Chat`. |
+| [`apps.py`](../tgtest/apps.py) | Games (`play`, `expect_game_score`) and Mini Apps (`open_*`, `parse_web_app_data`), mixed into `_Chat`. |
 | [`browser.py`](../tgtest/browser.py) | Optional `assert_page_loads` (Playwright, `browser` extra). |
 | [`matchers.py`](../tgtest/matchers.py) | `Matcher` — text/button assertions; returns a reason string or `None`. |
 | [`scenario.py`](../tgtest/scenario.py) | Parse + validate YAML into `Scenario`/`Step` models. |
