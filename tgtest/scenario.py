@@ -41,6 +41,11 @@ _ACTION_KEYS = {
     "expect_buttons",
     "click",
     "sleep",
+    "play",
+    "high_scores",
+    "open_web_app",
+    "open_menu_app",
+    "open_app",
 }
 _MODIFIER_KEYS = {
     "timeout",
@@ -51,6 +56,11 @@ _MODIFIER_KEYS = {
     "within",
     "caption",
     "force_document",
+    "url_contains",
+    "url_regex",
+    "page_loads",
+    "start_param",
+    "min_entries",
 }
 
 

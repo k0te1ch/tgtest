@@ -8,7 +8,9 @@ and description, so the runner can pinpoint failures.
 from __future__ import annotations
 
 import asyncio
+import re
 
+from .browser import assert_page_loads
 from .client import BotTester
 from .matchers import Matcher
 from .scenario import Scenario, Step
@@ -69,6 +71,43 @@ class _Steps:
             index=self.opts.get("index"),
             data=self.opts.get("data"),
         )
+
+    async def play(self):
+        await self._check_url(await self.chat.play(timeout=self.timeout))
+
+    async def high_scores(self):
+        scores = await self.chat.high_scores(timeout=self.timeout)
+        least = int(self.opts.get("min_entries", 0))
+        if len(scores) < least:
+            raise AssertionError(
+                f"expected at least {least} high score entries, got {len(scores)}"
+            )
+
+    async def open_web_app(self):
+        url = await self.chat.open_web_app(str(self.value), timeout=self.timeout)
+        await self._check_url(url)
+
+    async def open_menu_app(self):
+        await self._check_url(await self.chat.open_menu_app(timeout=self.timeout))
+
+    async def open_app(self):
+        url = await self.chat.open_app(
+            str(self.value),
+            start_param=self.opts.get("start_param"),
+            timeout=self.timeout,
+        )
+        await self._check_url(url)
+
+    async def _check_url(self, url: str):
+        """Apply the url_contains / url_regex / page_loads modifiers."""
+        contains = self.opts.get("url_contains")
+        if contains is not None and contains not in url:
+            raise AssertionError(f"URL does not contain {contains!r}\n  actual: {url}")
+        pattern = self.opts.get("url_regex")
+        if pattern is not None and not re.search(pattern, url):
+            raise AssertionError(f"URL does not match {pattern!r}\n  actual: {url}")
+        if self.opts.get("page_loads"):
+            await assert_page_loads(url, timeout=self.timeout or 30.0)
 
 
 async def _run_step(chat, step: Step):

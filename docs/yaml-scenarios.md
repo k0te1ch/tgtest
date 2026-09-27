@@ -72,6 +72,11 @@ keys.
 | `expect_buttons` | string or list | Assert the current message exposes these button labels. |
 | `click` | string (label) or empty | Click an inline button on the current message. |
 | `sleep` | seconds (number) | Pause. |
+| `play` | empty | Press the game button of the last game message; the bot must answer with a URL. |
+| `high_scores` | empty | Read the high score table of the last game message. |
+| `open_web_app` | string (label) | Open a `web_app` button of the current message (inline or reply keyboard). |
+| `open_menu_app` | empty | Open the Mini App behind the bot's menu button. |
+| `open_app` | string (short name) | Open the named Mini App `t.me/<bot>/<short_name>`. |
 
 ### Modifier keys
 
@@ -86,6 +91,11 @@ These may accompany any action:
 | `within` | `expect_no_reply` | Alternative to the inline value. |
 | `caption` | `send_file` | Caption for the file. |
 | `force_document` | `send_file` | Send as a document instead of media. |
+| `url_contains` | `play`, `open_*` | The returned URL must contain this substring. |
+| `url_regex` | `play`, `open_*` | `re.search` must find this pattern in the returned URL. |
+| `page_loads` | `play`, `open_*` | `true` opens the URL in a headless browser (needs the `browser` extra). |
+| `start_param` | `open_app` | Start parameter passed to the Mini App. |
+| `min_entries` | `high_scores` | The table must have at least this many rows. |
 | `note` | any | Free-text shown in failure reports. |
 
 ### Step examples
@@ -121,7 +131,22 @@ steps:
     note: "slow report generation"
 ```
 
-See [Buttons & keyboards](buttons-and-keyboards.md) for the click semantics.
+See [Buttons & keyboards](buttons-and-keyboards.md) for the click semantics
+and [Games & Mini Apps](games-and-mini-apps.md) for the game and web app steps:
+
+```yaml
+steps:
+  - command: game
+  - expect:
+      game: snake                  # the reply carries the game "snake"
+  - play:
+    url_contains: "snake"
+  - high_scores:
+    min_entries: 1
+  - open_app: arcade
+    start_param: ref42
+    url_contains: "tgWebAppStartParam=ref42"
+```
 
 ## Matchers
 
@@ -140,6 +165,7 @@ given, **all** must pass.
 | `buttons` | list | All listed buttons are present (order-free): labels, or `{text, data, data_regex}` to check callback data. |
 | `buttons_exact` | list | The whole keyboard equals this list (set + order). |
 | `has_buttons` | bool | The message has (or has no) keyboard. |
+| `game` | string | The message carries a game with this short name. |
 
 ```yaml
 # string shorthand
