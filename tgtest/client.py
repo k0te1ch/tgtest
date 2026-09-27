@@ -24,12 +24,14 @@ from telethon import TelegramClient
 from telethon.errors import TimeoutError as TelethonTimeout
 from telethon.sessions import StringSession
 
+from .apps import AppsMixin
 from .config import Settings
 from .exceptions import ConnectError, SessionLockedError
 from .matchers import (
     Matcher,
     button_texts,
     describe_keyboard,
+    game_short_name,
     keyboard,
     missing_buttons,
 )
@@ -135,9 +137,10 @@ def _snapshot(message) -> tuple:
     return (getattr(message, "edit_date", None), text, tuple(keyboard(message)))
 
 
-class _Chat:
+class _Chat(AppsMixin):
     """A live conversation with one bot. Tracks the 'current' message so that
-    `click`/`expect_buttons`/`expect_edit` operate on the most recent reply."""
+    `click`/`expect_buttons`/`expect_edit` operate on the most recent reply,
+    and the last game message for `play`/`high_scores`."""
 
     def __init__(
         self,
@@ -154,6 +157,7 @@ class _Chat:
         self._client = client if client is not None else getattr(conv, "_client", None)
         self._poll_interval = poll_interval
         self.last = None  # most recent Message we received
+        self.last_game = None  # most recent Message carrying a game
 
     async def send(self, text: str):
         """Send a plain text message to the bot."""
@@ -176,7 +180,7 @@ class _Chat:
     async def get_reply(self, timeout: float | None = None):
         """Wait for and return the next reply message from the bot."""
         try:
-            self.last = await self._conv.get_response(
+            message = await self._conv.get_response(
                 timeout=timeout if timeout is not None else self._default_timeout
             )
         except (asyncio.TimeoutError, TelethonTimeout):
@@ -184,7 +188,13 @@ class _Chat:
             raise AssertionError(
                 f"timed out after {wait}s waiting for a reply"
             ) from None
-        return self.last
+        self._remember(message)
+        return message
+
+    def _remember(self, message) -> None:
+        self.last = message
+        if game_short_name(message) is not None:
+            self.last_game = message
 
     async def expect(self, timeout: float | None = None, **spec):
         """Wait for the next reply and assert it matches the given clauses.
@@ -235,7 +245,7 @@ class _Chat:
             message = await self._reread()
             reason = accept(message)
             if reason is None:
-                self.last = message
+                self._remember(message)
                 return message
             remaining = deadline - loop.time()
             if remaining <= 0:
