@@ -144,3 +144,36 @@ def test_expect_buttons_accepts_data_specs():
     with pytest.raises(AssertionError, match="missing buttons"):
         chat.expect_buttons({"text": "Aftershow", "data": "type:episode"})
     chat.expect_buttons("Episode", {"text": "Aftershow"}, exact=True)
+
+
+async def test_wait_for_text_ignores_case_and_polls():
+    chat = chat_with(
+        Message("Отправка"), Message("Отправка"), edited("Файл УСПЕШНО загружен")
+    )
+
+    message = await chat.wait_for_text("успешно загружен")
+
+    assert message.text == "Файл УСПЕШНО загружен"
+
+
+async def test_wait_for_text_takes_any_message():
+    chat = chat_with(Message("first"), edited("status: done"))
+    status = Message("status: working", id=9)
+
+    message = await chat.wait_for_text("DONE", message=status)
+
+    assert chat.last is message
+
+
+async def test_wait_for_text_times_out_with_the_last_text():
+    chat = chat_with(Message("working"), Message("still working"))
+
+    with pytest.raises(AssertionError, match="still working"):
+        await chat.wait_for_text("done", timeout=0.05)
+
+
+def test_icontains_ignores_case_both_ways():
+    assert (
+        Matcher.from_spec({"icontains": "ГОТОВО"}).check(Message("всё готово")) is None
+    )
+    assert Matcher.from_spec({"icontains": "done"}).check(Message("DONE!")) is None

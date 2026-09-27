@@ -39,6 +39,9 @@ class Settings(BaseSettings):
     lang_code: str | None = None
     # Defaults to `lang_code`.
     system_lang_code: str | None = None
+    # Language pack reported in initConnection ("android", "tdesktop", ...).
+    # Telethon sends an empty one; see docs/troubleshooting.md.
+    lang_pack: str | None = None
     # Logging.
     app_name: str = "tgtest"
     log_level: str = "INFO"

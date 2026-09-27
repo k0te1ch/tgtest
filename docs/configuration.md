@@ -23,6 +23,7 @@ Source: [`tgtest/config.py`](../tgtest/config.py).
 | `TG_CONNECT_TIMEOUT` | `connect_timeout` | float | `30.0` | no | How long to wait for the connection to Telegram; on timeout the error suggests `TG_PROXY`. |
 | `TG_LANG_CODE` | `lang_code` | str | `None` (Telethon: `en`) | no | Language the test account reports; bots see it as `from_user.language_code`. |
 | `TG_SYSTEM_LANG_CODE` | `system_lang_code` | str | `TG_LANG_CODE` | no | System language reported to Telegram. |
+| `TG_LANG_PACK` | `lang_pack` | str | `None` (Telethon: empty) | no | Language pack sent in `initConnection` (`android`, `tdesktop`, ...). See [the bot answers in the wrong language](troubleshooting.md#the-bot-answers-in-the-wrong-language). |
 | `TG_APP_NAME` | `app_name` | str | `tgtest` | no | Logger name. |
 | `TG_LOG_LEVEL` | `log_level` | str | `INFO` | no | Logging level. |
 

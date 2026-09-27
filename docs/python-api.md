@@ -72,7 +72,9 @@ asyncio.run(main())
 | `await chat.get_reply(timeout=None)` | Wait for and return the next reply; sets `chat.last`. |
 | `await chat.expect(timeout=None, **matcher)` | `get_reply` + assert; returns the message. |
 | `await chat.expect_edit(timeout=None, **matcher)` | Wait until `chat.last` is edited into a matching message; edits made before the call count. |
-| `await chat.wait_until(timeout=None, **matcher)` | Wait until `chat.last` matches, edited or not (e.g. a result that arrives later). |
+| `await chat.wait_until(timeout=None, *, message=None, **matcher)` | Wait until `chat.last` (or `message`) matches, edited or not (e.g. a result that arrives later). |
+| `await chat.wait_for_text(fragment, timeout=None, *, message=None)` | Shorthand for `wait_until(icontains=fragment)`: wait until a status message the bot keeps editing contains `fragment`, ignoring case. |
+| `await chat.detect_language(markers, probe="/start", timeout=None)` | Send `probe` and return the language code whose marker the reply contains, or `None`. |
 | `await chat.expect_no_reply(within=2.0)` | Assert nothing arrives within `within` seconds. |
 | `chat.expect_buttons(*labels, exact=False)` | Assert the current message's buttons (sync). |
 
@@ -80,6 +82,9 @@ The `**matcher` keyword arguments are exactly the [matcher
 clauses](yaml-scenarios.md#matchers): `equals`, `contains`, `icontains`,
 `not_contains`, `regex`, `iregex`, `buttons`, `buttons_exact`, `has_buttons`,
 `game`.
+
+`expect()` with no clauses accepts whatever the bot sends next. `icontains`
+and `iregex` ignore case; the other text clauses do not.
 
 ```python
 await chat.expect(contains="Welcome", buttons=["Settings", "Help"])

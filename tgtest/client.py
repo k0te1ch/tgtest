@@ -96,7 +96,7 @@ def build_client(config: Settings) -> TelegramClient:
         else config.session
     )
     try:
-        return TelegramClient(
+        client = TelegramClient(
             session,
             config.api_id,
             config.api_hash,
@@ -107,6 +107,10 @@ def build_client(config: Settings) -> TelegramClient:
         if "locked" not in str(exc):
             raise
         raise SessionLockedError(_LOCKED_HINT.format(session=config.session)) from exc
+    if config.lang_pack:
+        # Telethon has no constructor argument for it (LonamiWebs/Telethon#3031).
+        client._init_request.lang_pack = config.lang_pack
+    return client
 
 
 async def connect(client: TelegramClient, config: Settings) -> None:
@@ -227,15 +231,50 @@ class _Chat(AppsMixin):
 
         return await self._poll("an edit", accept, timeout)
 
-    async def wait_until(self, timeout: float | None = None, **spec):
-        """Wait until the current message matches `spec`, edited or not.
+    async def wait_until(self, timeout: float | None = None, *, message=None, **spec):
+        """Wait until a message matches `spec`, edited or not.
 
-        For results that arrive later as edits, e.g. a publish status.
+        For results that arrive later as edits, e.g. a publish status. The
+        message is `chat.last` unless another one is passed; it becomes
+        `chat.last` once it matches.
         """
+        if message is not None:
+            self.last = message
         if self.last is None:
             raise AssertionError("wait_until called before any reply was received")
         matcher = Matcher.from_spec(spec)
         return await self._poll(matcher.describe(), matcher.check, timeout)
+
+    async def wait_for_text(
+        self, fragment: str, timeout: float | None = None, *, message=None
+    ):
+        """Wait until the message text contains `fragment`, ignoring case.
+
+        Shorthand for `wait_until(icontains=fragment)`, for status messages
+        the bot edits several times before the final text.
+        """
+        return await self.wait_until(timeout, message=message, icontains=fragment)
+
+    async def detect_language(
+        self,
+        markers: dict[str, str],
+        probe: str = "/start",
+        timeout: float | None = None,
+    ) -> str | None:
+        """Send `probe` and tell which language the bot answered in.
+
+        `markers` maps a language code to a fragment only that language's
+        reply contains (case-insensitive), e.g. {"ru": "привет", "en": "hello"}.
+        Returns the first matching code, or None. It shows the language the
+        bot sees, which Telegram may not take from TG_LANG_CODE.
+        """
+        await self.send(probe)
+        reply = await self.get_reply(timeout=timeout)
+        text = (getattr(reply, "text", None) or "").lower()
+        for code, fragment in markers.items():
+            if fragment.lower() in text:
+                return code
+        return None
 
     async def _poll(self, what: str, accept, timeout: float | None):
         """Re-read the current message until `accept` returns None (no reason)."""

@@ -121,3 +121,54 @@ async def test_yaml_send_file_step():
     )()
 
     assert conv.files == [("a.mp3", {"caption": "episode", "force_document": False})]
+
+
+def test_lang_pack_is_passed_to_telegram(tmp_path):
+    client = build_client(settings(tmp_path, lang_code="ru", lang_pack="android"))
+
+    assert client._init_request.lang_pack == "android"
+
+
+def test_lang_pack_stays_empty_by_default(tmp_path):
+    client = build_client(settings(tmp_path, lang_code="ru"))
+
+    assert client._init_request.lang_pack == ""
+
+
+class ReplyConv:
+    def __init__(self, *replies):
+        self.replies = list(replies)
+        self.sent = []
+
+    async def send_message(self, text):
+        self.sent.append(text)
+
+    async def get_response(self, timeout):
+        return self.replies.pop(0)
+
+
+class Reply:
+    def __init__(self, text):
+        self.text = text
+
+
+async def test_expect_without_clauses_accepts_any_reply():
+    chat = _Chat(ReplyConv(Reply("whatever")), "bot", 0.2)
+
+    message = await chat.expect()
+
+    assert message.text == "whatever"
+
+
+@pytest.mark.parametrize(
+    ("reply", "expected"),
+    [("Привет! Выберите тип", "ru"), ("HELLO, pick a type", "en"), ("¿Hola?", None)],
+)
+async def test_detect_language_by_markers(reply, expected):
+    conv = ReplyConv(Reply(reply))
+    chat = _Chat(conv, "bot", 0.2)
+
+    code = await chat.detect_language({"ru": "привет", "en": "hello"})
+
+    assert code == expected
+    assert conv.sent == ["/start"]

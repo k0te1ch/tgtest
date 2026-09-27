@@ -2059,4 +2059,4 @@ browser = ["playwright"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<4.0"
-content-hash = "26c1911b476b74192ccc4fd19144f33ae2c1844a33d75af712465a07ae668f9f"
+content-hash = "7696e8c3a91fe1c21e0a1d945c680e5b2c85785cad6aa2238e62e4e660df8ce5"
