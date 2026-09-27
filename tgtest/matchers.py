@@ -11,6 +11,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
+from telethon.tl.types import MessageMediaGame
+
 # Keys in an expect block that describe the message *text*.
 _TEXT_KEYS = ("equals", "contains", "icontains", "regex", "iregex", "not_contains")
 
@@ -18,6 +20,14 @@ _TEXT_KEYS = ("equals", "contains", "icontains", "regex", "iregex", "not_contain
 def _message_text(message) -> str:
     """Best-effort textual content of a message (text, or media caption)."""
     return getattr(message, "text", None) or getattr(message, "message", None) or ""
+
+
+def game_short_name(message) -> str | None:
+    """Short name of the game a message carries, or None if it has no game."""
+    media = getattr(message, "media", None)
+    if isinstance(media, MessageMediaGame):
+        return media.game.short_name
+    return None
 
 
 def button_texts(message) -> list[str]:
@@ -88,6 +98,7 @@ class Matcher:
     buttons: list | None = None
     buttons_exact: list[str] | None = None  # full keyboard must equal this set/order
     has_buttons: bool | None = None  # assert presence/absence of any keyboard
+    game: str | None = None  # short name of the game the message must carry
     _raw: dict = field(default_factory=dict, repr=False)
 
     @classmethod
@@ -114,6 +125,7 @@ class Matcher:
             "buttons",
             "buttons_exact",
             "has_buttons",
+            "game",
         }
         unknown = set(spec) - known
         if unknown:
@@ -128,12 +140,32 @@ class Matcher:
             buttons=spec.get("buttons"),
             buttons_exact=spec.get("buttons_exact"),
             has_buttons=spec.get("has_buttons"),
+            game=spec.get("game"),
             _raw=dict(spec),
         )
 
     def check(self, message) -> str | None:
         """Return None if the message satisfies every clause, else a reason."""
-        return self._check_text(_message_text(message)) or self._check_buttons(message)
+        return (
+            self._check_text(_message_text(message))
+            or self._check_buttons(message)
+            or self._check_game(message)
+        )
+
+    def _check_game(self, message) -> str | None:
+        if self.game is None:
+            return None
+        actual = game_short_name(message)
+        if actual is None:
+            media = getattr(message, "media", None)
+            kind = type(media).__name__ if media is not None else "none"
+            return (
+                f"expected game {self.game!r}, but the message has no game "
+                f"(media: {kind})"
+            )
+        if actual != self.game:
+            return f"game differs\n  expected: {self.game!r}\n  actual:   {actual!r}"
+        return None
 
     def _check_text(self, text: str) -> str | None:
         if self.equals is not None and text != self.equals:
