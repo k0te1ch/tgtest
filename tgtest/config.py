@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     proxy: str | None = None
     # Default per-step reply timeout, in seconds.
     timeout: float = 15.0
+    # How often expect_edit / wait_until re-read the message, in seconds.
+    poll_interval: float = 0.5
     # How long to wait for the connection to Telegram, in seconds.
     connect_timeout: float = 30.0
     # Language the test account reports to Telegram. Bots see it as

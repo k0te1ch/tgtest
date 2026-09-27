@@ -49,6 +49,9 @@ class _Steps:
     async def expect_edit(self):
         await self.chat.expect_edit(timeout=self.timeout, **_as_spec(self.value))
 
+    async def wait_until(self):
+        await self.chat.wait_until(timeout=self.timeout, **_as_spec(self.value))
+
     async def expect_no_reply(self):
         if self.value is not None:
             within = float(self.value)
