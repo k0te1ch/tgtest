@@ -33,6 +33,11 @@ import `app.py`, keeping `from examples.bot import text` aiogram-free.
 - press **Settings** → the message is edited in place to the settings text
 - `ping` → `pong`; any other text → `You said: …`
 - unknown `/command` → "Unknown command."
+- `/game` sends the game `GAME_SHORT_NAME` (default `demo_game`, a placeholder:
+  create the game with `/newgame` in @BotFather and set `GAME_SHORT_NAME` to
+  its short name); pressing **Play** answers with `GAME_URL?user=<id>`
+- `/app` sends an **Open app** button of type `web_app` opening `WEB_APP_URL`
+  (default `https://example.com/app`)
 
 ## Run the unit tests (no setup)
 
@@ -60,6 +65,11 @@ No credentials, token, or aiogram runtime needed — they import only
    ```powershell
    python -m pytest examples/tests/e2e -m e2e
    ```
+
+The game tests run only when `GAME_SHORT_NAME` is set (the game must exist in
+@BotFather); `game.yaml` also expects that short name to be `demo_game`. The
+Mini App tests need nothing extra: `https://example.com/app` is enough for
+Telegram to issue the launch URL. See [Games & Mini Apps](games-and-mini-apps.md).
 
 If `TEST_BOT_TOKEN` is unset, the E2E tests **skip** rather than fail, so the
 example is safe to leave in the repo.

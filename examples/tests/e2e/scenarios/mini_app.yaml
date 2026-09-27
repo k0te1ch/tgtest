@@ -1,0 +1,11 @@
+# The /app command shows a web_app button; opening it must give a Mini App URL
+# carrying Telegram's signed launch data.
+name: Demo bot opens its Mini App
+timeout: 15
+steps:
+  - command: app
+  - expect:
+      contains: "Mini App"
+      buttons: ["Open app"]
+  - open_web_app: "Open app"
+    url_contains: "tgWebAppData"

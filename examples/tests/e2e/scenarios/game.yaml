@@ -1,0 +1,12 @@
+# Needs a real game: create it with /newgame in @BotFather, then set
+# GAME_SHORT_NAME to its short name (the test skips without it). The short
+# name below must match GAME_SHORT_NAME.
+name: Demo bot game hands out a URL
+timeout: 15
+steps:
+  - command: game
+  - expect:
+      game: demo_game
+  - play:
+    url_regex: 'user=\d+'
+  - high_scores:

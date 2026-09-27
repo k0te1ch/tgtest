@@ -31,6 +31,11 @@ is what the E2E tests exercise against a real running bot.
 - press **Settings** → message is edited in place to the settings text
 - `ping` → `pong`; any other text → `You said: ...`
 - unknown `/command` → "Unknown command."
+- `/game` sends the game `GAME_SHORT_NAME` (default `demo_game`, a placeholder:
+  create the game with `/newgame` in @BotFather and set `GAME_SHORT_NAME` to
+  its short name); pressing **Play** answers with `GAME_URL?user=<id>`
+- `/app` sends an **Open app** button of type `web_app` opening `WEB_APP_URL`
+  (default `https://example.com/app`)
 
 ## Run the unit tests (no setup)
 

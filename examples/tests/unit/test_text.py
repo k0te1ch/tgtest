@@ -14,3 +14,12 @@ def test_reply_for_echoes_other_text():
 
 def test_main_menu_shape():
     assert text.main_menu() == [("Settings", "settings"), ("Help", "help")]
+
+
+def test_game_link_adds_the_player():
+    assert (
+        text.game_link("https://g.example/play", 7) == "https://g.example/play?user=7"
+    )
+    assert text.game_link("https://g.example/?lvl=2", 7) == (
+        "https://g.example/?lvl=2&user=7"
+    )
