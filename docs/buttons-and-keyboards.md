@@ -72,10 +72,27 @@ await chat.click(data="settings")  # by callback data (str is encoded to bytes)
 Use `data=` when labels are localized or dynamic but the callback payload is
 stable — it's the most robust selector for inline buttons.
 
+Button checks can include callback data too: an entry in `buttons` /
+`expect_buttons` is a label or a mapping with `text`, `data` and/or
+`data_regex`:
+
+```yaml
+- expect:
+    buttons:
+      - "Settings"
+      - {text: "Episode", data: "type:episode"}
+      - {data_regex: "^page:\\d+$"}
+```
+
+```python
+chat.expect_buttons("Settings", {"text": "Episode", "data": "type:episode"})
+```
+
 ## After a click
 
 - **Callback buttons** → the bot receives a callback query. It may:
-  - **edit** the message → assert with `expect_edit(...)`;
+  - **edit** the message (text or just the keyboard) → assert with
+    `expect_edit(...)`; an edit made before the call is still caught;
   - **send a new** message → assert with `expect(...)`;
   - **answer** with a toast/alert → `click()` returns Telethon's callback
     answer object if you need it (`answer = await chat.click("X")`).

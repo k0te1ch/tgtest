@@ -32,11 +32,15 @@ No message arrived in time.
 
 ## `timed out ... waiting for an edit`
 
-`expect_edit` expects the **current** message to be edited, but it wasn't.
+`expect_edit` waits until the **current** message is edited into one that
+matches; the error shows the last mismatch (or "the message was not edited").
 
 - If the bot sends a **new** message instead of editing, use `expect` not
   `expect_edit`.
 - Confirm the click actually triggered a callback (URL buttons don't call back).
+- The result arrives much later (a publish status, a long job)? Use
+  `wait_until` with a longer `timeout`: it accepts the message whether or not
+  it was already edited.
 
 ## `click called before any reply was received`
 
