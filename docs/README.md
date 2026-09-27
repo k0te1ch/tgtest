@@ -13,10 +13,11 @@ bot, clicks its buttons, and asserts on the replies — either through declarati
 4. [YAML scenarios](yaml-scenarios.md) — full step + matcher reference.
 5. [Python API](python-api.md) — `BotTester`, the `_Chat` helpers, pytest fixtures, exceptions.
 6. [Buttons & keyboards](buttons-and-keyboards.md) — clicking inline buttons, asserting keyboards.
-7. [Using tgtest with your bot](bot-integration.md) — next to unit tests, project layout, CI.
-8. [The example bot](example-bot.md) — walkthrough of `examples/`.
-9. [Architecture](architecture.md) — how it works under the hood.
-10. [Troubleshooting](troubleshooting.md) — common errors and fixes.
+7. [Games & Mini Apps](games-and-mini-apps.md) — pressing Play, high scores, opening Mini Apps.
+8. [Using tgtest with your bot](bot-integration.md) — next to unit tests, project layout, CI.
+9. [The example bot](example-bot.md) — walkthrough of `examples/`.
+10. [Architecture](architecture.md) — how it works under the hood.
+11. [Troubleshooting](troubleshooting.md) — common errors and fixes.
 
 ## Why a user account?
 
