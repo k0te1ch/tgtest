@@ -14,10 +14,14 @@ Source: [`tgtest/config.py`](../tgtest/config.py).
 | `TG_API_ID` | `api_id` | int | — | **yes** | User-client API id from my.telegram.org. |
 | `TG_API_HASH` | `api_hash` | str | — | **yes** | User-client API hash. |
 | `TG_SESSION` | `session` | str | `tgtest.session` | no | Telethon session file path. |
+| `TG_SESSION_STRING` | `session_string` | str | `None` | no | Session as a string (`python login.py --string`). Wins over `TG_SESSION`; no file, so several clients can share it. |
 | `TG_PHONE` | `phone` | str | `None` | for login only | Test account phone, used by `login.py`. |
 | `TG_DEFAULT_BOT` | `default_bot` | str | `None` | no | Bot used when a test/scenario names none. |
 | `TG_PROXY` | `proxy` | str | `None` | no | Proxy URL for the user client (see [Proxy](#proxy)). |
 | `TG_TIMEOUT` | `timeout` | float | `15.0` | no | Default per-step reply timeout (seconds). |
+| `TG_CONNECT_TIMEOUT` | `connect_timeout` | float | `30.0` | no | How long to wait for the connection to Telegram; on timeout the error suggests `TG_PROXY`. |
+| `TG_LANG_CODE` | `lang_code` | str | `None` (Telethon: `en`) | no | Language the test account reports; bots see it as `from_user.language_code`. |
+| `TG_SYSTEM_LANG_CODE` | `system_lang_code` | str | `TG_LANG_CODE` | no | System language reported to Telegram. |
 | `TG_APP_NAME` | `app_name` | str | `tgtest` | no | Logger name. |
 | `TG_LOG_LEVEL` | `log_level` | str | `INFO` | no | Logging level. |
 

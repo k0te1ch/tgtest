@@ -15,56 +15,63 @@ from .scenario import Scenario, Step
 from .exceptions import StepError
 
 
-def _build_handlers(chat, value, opts, timeout) -> dict:
-    async def _send():
-        await chat.send(str(value))
+class _Steps:
+    """One method per YAML action; the method name is the action key."""
 
-    async def _command():
-        await chat.command(str(value))
+    def __init__(self, chat, value, opts: dict, timeout: float | None):
+        self.chat = chat
+        self.value = value
+        self.opts = opts
+        self.timeout = timeout
 
-    async def _sleep():
-        await asyncio.sleep(float(value))
+    async def send(self):
+        await self.chat.send(str(self.value))
 
-    async def _expect():
-        message = await chat.get_reply(timeout=timeout)
-        reason = Matcher.from_spec(value).check(message)
+    async def send_file(self):
+        await self.chat.send_file(
+            str(self.value),
+            caption=self.opts.get("caption"),
+            force_document=bool(self.opts.get("force_document", False)),
+        )
+
+    async def command(self):
+        await self.chat.command(str(self.value))
+
+    async def sleep(self):
+        await asyncio.sleep(float(self.value))
+
+    async def expect(self):
+        message = await self.chat.get_reply(timeout=self.timeout)
+        reason = Matcher.from_spec(self.value).check(message)
         if reason:
             raise AssertionError(reason)
 
-    async def _expect_edit():
-        await chat.expect_edit(timeout=timeout, **(_as_spec(value)))
+    async def expect_edit(self):
+        await self.chat.expect_edit(timeout=self.timeout, **_as_spec(self.value))
 
-    async def _expect_no_reply():
-        within = float(value) if value is not None else float(opts.get("within", 2.0))
-        await chat.expect_no_reply(within=within)
+    async def expect_no_reply(self):
+        if self.value is not None:
+            within = float(self.value)
+        else:
+            within = float(self.opts.get("within", 2.0))
+        await self.chat.expect_no_reply(within=within)
 
-    async def _expect_buttons():
-        labels = value if isinstance(value, list) else [value]
-        chat.expect_buttons(*labels, exact=bool(opts.get("exact", False)))
+    async def expect_buttons(self):
+        labels = self.value if isinstance(self.value, list) else [self.value]
+        self.chat.expect_buttons(*labels, exact=bool(self.opts.get("exact", False)))
 
-    async def _click():
-        await chat.click(
-            text=value if isinstance(value, str) else None,
-            index=opts.get("index"),
-            data=opts.get("data"),
+    async def click(self):
+        await self.chat.click(
+            text=self.value if isinstance(self.value, str) else None,
+            index=self.opts.get("index"),
+            data=self.opts.get("data"),
         )
-
-    return {
-        "send": _send,
-        "command": _command,
-        "sleep": _sleep,
-        "expect": _expect,
-        "expect_edit": _expect_edit,
-        "expect_no_reply": _expect_no_reply,
-        "expect_buttons": _expect_buttons,
-        "click": _click,
-    }
 
 
 async def _run_step(chat, step: Step):
     action, value, opts = step.action, step.value, step.options
     timeout = float(opts["timeout"]) if "timeout" in opts else None
-    handler = _build_handlers(chat, value, opts, timeout).get(action)
+    handler = getattr(_Steps(chat, value, opts, timeout), action, None)
     if handler is None:  # pragma: no cover - parser guarantees valid actions
         raise StepError(f"unknown action {action!r}", step_index=step.index)
     await handler()

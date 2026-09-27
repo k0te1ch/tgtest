@@ -32,6 +32,7 @@ from .exceptions import ScenarioError
 # (plus optional modifiers like `timeout`).
 _ACTION_KEYS = {
     "send",
+    "send_file",
     "command",
     "expect",
     "expect_edit",
@@ -40,7 +41,16 @@ _ACTION_KEYS = {
     "click",
     "sleep",
 }
-_MODIFIER_KEYS = {"timeout", "exact", "index", "data", "note", "within"}
+_MODIFIER_KEYS = {
+    "timeout",
+    "exact",
+    "index",
+    "data",
+    "note",
+    "within",
+    "caption",
+    "force_document",
+}
 
 
 @dataclass

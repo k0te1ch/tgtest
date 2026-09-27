@@ -17,12 +17,15 @@ Typical Python usage:
 from __future__ import annotations
 
 import asyncio
+import sqlite3
 from contextlib import asynccontextmanager
 
 from telethon import TelegramClient
 from telethon.errors import TimeoutError as TelethonTimeout
+from telethon.sessions import StringSession
 
 from .config import Settings
+from .exceptions import ConnectError, SessionLockedError
 from .matchers import Matcher, button_texts
 from .proxy import ProxyConfig, parse_proxy
 
@@ -55,16 +58,69 @@ def _proxy_kwargs(proxy: ProxyConfig | None) -> dict:
     }
 
 
+_LOCKED_HINT = (
+    "Session {session!r} is locked: another client already uses this file. "
+    "Reuse the connected client (`tester.client`) instead of opening a second "
+    "one, or set TG_SESSION_STRING (`python login.py --string`), which has no "
+    "file to lock."
+)
+
+
+def _lang_kwargs(config: Settings) -> dict:
+    if not config.lang_code:
+        return {}
+    return {
+        "lang_code": config.lang_code,
+        "system_lang_code": config.system_lang_code or config.lang_code,
+    }
+
+
 def build_client(config: Settings) -> TelegramClient:
     """Create a (not-yet-connected) TelegramClient, applying any proxy config.
 
     Shared by BotTester (test runs) and login.py (first-time auth) so both honor
-    TG_PROXY identically.
+    TG_PROXY, TG_LANG_CODE and TG_SESSION_STRING identically.
     """
     proxy = parse_proxy(config.proxy)
-    return TelegramClient(
-        config.session, config.api_id, config.api_hash, **_proxy_kwargs(proxy)
+    session = (
+        StringSession(config.session_string)
+        if config.session_string
+        else config.session
     )
+    try:
+        return TelegramClient(
+            session,
+            config.api_id,
+            config.api_hash,
+            **_proxy_kwargs(proxy),
+            **_lang_kwargs(config),
+        )
+    except sqlite3.OperationalError as exc:
+        if "locked" not in str(exc):
+            raise
+        raise SessionLockedError(_LOCKED_HINT.format(session=config.session)) from exc
+
+
+async def connect(client: TelegramClient, config: Settings) -> None:
+    """Connect within TG_CONNECT_TIMEOUT, explaining what to check on failure."""
+    try:
+        await asyncio.wait_for(client.connect(), timeout=config.connect_timeout)
+    except sqlite3.OperationalError as exc:
+        if "locked" not in str(exc):
+            raise
+        raise SessionLockedError(_LOCKED_HINT.format(session=config.session)) from exc
+    except (asyncio.TimeoutError, OSError) as exc:
+        if config.proxy:
+            hint = f"Check that the proxy in TG_PROXY ({config.proxy}) is reachable."
+        else:
+            hint = (
+                "Telegram may be blocked on this network: set TG_PROXY "
+                "(socks5://host:port or mtproxy://SECRET@host:port)."
+            )
+        raise ConnectError(
+            f"could not connect to Telegram within {config.connect_timeout}s "
+            f"({type(exc).__name__}). {hint}"
+        ) from exc
 
 
 class _Chat:
@@ -80,6 +136,14 @@ class _Chat:
     async def send(self, text: str):
         """Send a plain text message to the bot."""
         return await self._conv.send_message(text)
+
+    async def send_file(self, file, caption: str | None = None, **kwargs):
+        """Send a file (path, bytes or file-like) to the bot.
+
+        Extra keyword arguments go to Telethon's `send_file`, e.g.
+        `force_document=True` or `voice_note=True`.
+        """
+        return await self._conv.send_file(file, caption=caption, **kwargs)
 
     async def command(self, cmd: str):
         """Send a bot command, prepending '/' if the caller omitted it."""
@@ -193,6 +257,14 @@ class BotTester:
         self._client = client
         self._config = config
 
+    @property
+    def client(self) -> TelegramClient:
+        """The connected Telethon client, for steps tgtest has no helper for.
+
+        Use it instead of opening a second client on the same session file.
+        """
+        return self._client
+
     @classmethod
     @asynccontextmanager
     async def create(cls, config: Settings):
@@ -203,7 +275,7 @@ class BotTester:
         test runs never block on interactive input.
         """
         client = build_client(config)
-        await client.connect()
+        await connect(client, config)
         if not await client.is_user_authorized():
             await client.disconnect()
             raise RuntimeError(

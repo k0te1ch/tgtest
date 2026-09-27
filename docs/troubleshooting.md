@@ -110,6 +110,27 @@ Percent-encode special characters in credentials (`@` → `%40`). See
   `poetry install`).
 - For MTProxy, double-check the `secret` and that the port is the MTProxy port.
 
+## `ConnectError: could not connect to Telegram within Ns`
+
+Telegram did not answer within `TG_CONNECT_TIMEOUT`. On networks where
+Telegram data centers are blocked the connection hangs instead of failing, so
+set `TG_PROXY` (see [Configuration → Proxy](configuration.md#proxy)). With a
+proxy already configured, check that it is reachable. `login.py` fails the
+same way instead of hanging.
+
+## `SessionLockedError: Session ... is locked`
+
+Two clients opened the same SQLite session file, typically a test that
+creates its own `TelegramClient` next to the `tester` fixture. Use
+`tester.client` for the extra steps, or switch to `TG_SESSION_STRING`
+(`python login.py --string` prints it), which has no file to lock.
+
+## The bot answers in the wrong language
+
+Bots usually pick the language from `from_user.language_code`, which Telegram
+takes from the client (Telethon reports `en`). Set `TG_LANG_CODE=ru` (and
+`TG_SYSTEM_LANG_CODE` if it should differ).
+
 ## Where to look
 
 Every run is logged to `logs/tgtest.log` (rotating). Raise detail with
