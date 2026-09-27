@@ -140,7 +140,7 @@ def _snapshot(message) -> tuple:
 class _Chat(AppsMixin):
     """A live conversation with one bot. Tracks the 'current' message so that
     `click`/`expect_buttons`/`expect_edit` operate on the most recent reply,
-    and the last game message for `play`/`high_scores`."""
+    and the last game message for `play`/`expect_game_score`."""
 
     def __init__(
         self,
@@ -158,6 +158,7 @@ class _Chat(AppsMixin):
         self._poll_interval = poll_interval
         self.last = None  # most recent Message we received
         self.last_game = None  # most recent Message carrying a game
+        self._score_seen = 0  # id of the newest game score message consumed
 
     async def send(self, text: str):
         """Send a plain text message to the bot."""

@@ -42,7 +42,7 @@ _ACTION_KEYS = {
     "click",
     "sleep",
     "play",
-    "high_scores",
+    "expect_game_score",
     "open_web_app",
     "open_menu_app",
     "open_app",
@@ -60,7 +60,7 @@ _MODIFIER_KEYS = {
     "url_regex",
     "page_loads",
     "start_param",
-    "min_entries",
+    "min_score",
 }
 
 

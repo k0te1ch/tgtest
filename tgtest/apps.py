@@ -1,8 +1,8 @@
-"""Bot games and Mini Apps: pressing Play, reading high scores, opening web apps.
+"""Bot games and Mini Apps: pressing Play, reading scores, opening web apps.
 
 `_Chat` inherits these helpers from `AppsMixin`. Each call goes straight to
 Telegram through the connected client and returns what the bot or Telegram
-answered (a URL or a score table), so tests can assert on it.
+answered (a URL or a score), so tests can assert on it.
 """
 
 from __future__ import annotations
@@ -18,16 +18,6 @@ from telethon.tl import functions, types
 
 # Platform reported to Telegram when opening a Mini App; ends up in the URL.
 PLATFORM = "tdesktop"
-
-
-@dataclass(frozen=True)
-class GameScore:
-    """One row of a game's high score table."""
-
-    position: int
-    user_id: int
-    name: str
-    score: int
 
 
 @dataclass(frozen=True)
@@ -67,6 +57,16 @@ def raw_buttons(message) -> list:
     ]
 
 
+def _check_score(score: int, exact: int | None, min_score: int | None) -> int:
+    if exact is not None and score != exact:
+        raise AssertionError(
+            f"game score differs\n  expected: {exact}\n  actual:   {score}"
+        )
+    if min_score is not None and score < min_score:
+        raise AssertionError(f"game score {score} is below the minimum {min_score}")
+    return score
+
+
 def _is_web_app(button) -> bool:
     return isinstance(
         button, (types.KeyboardButtonWebView, types.KeyboardButtonSimpleWebView)
@@ -81,6 +81,8 @@ class AppsMixin:
     _default_timeout: float
     last: object | None
     last_game: object | None
+    _poll_interval: float
+    _score_seen: int
 
     async def play(self, timeout: float | None = None) -> str:
         """Press the game button of the last game message, return the game URL.
@@ -106,20 +108,47 @@ class AppsMixin:
             )
         return answer.url
 
-    async def high_scores(
-        self, user="me", timeout: float | None = None
-    ) -> list[GameScore]:
-        """High scores of the last game message around `user` (default: us)."""
-        message = self._game_message("high_scores")
-        request = functions.messages.GetGameHighScoresRequest(
-            peer=self._bot, id=message.id, user_id=user
+    async def expect_game_score(
+        self,
+        exact: int | None = None,
+        min_score: int | None = None,
+        timeout: float | None = None,
+    ) -> int:
+        """Wait for the next score message of the last game, return the score.
+
+        After `setGameScore` Telegram posts a service message ("X scored N")
+        with `MessageActionGameScore`. Conversations never deliver service
+        messages, so the chat history is polled for ones newer than the last
+        score seen. `exact` and `min_score` assert on the score.
+        """
+        game = self._game_message("expect_game_score")
+        game_id = game.media.game.id
+        wait = timeout if timeout is not None else self._default_timeout
+        loop = asyncio.get_running_loop()
+        deadline = loop.time() + wait
+        while True:
+            action = await self._next_score(game_id, max(self._score_seen, game.id))
+            if action is not None:
+                return _check_score(action.score, exact, min_score)
+            remaining = deadline - loop.time()
+            if remaining <= 0:
+                raise AssertionError(
+                    f"timed out after {wait}s waiting for a score message of "
+                    f"game {game.media.game.short_name!r}"
+                )
+            await asyncio.sleep(min(self._poll_interval, remaining))
+
+    async def _next_score(self, game_id: int, after_id: int):
+        history = await self._client.get_messages(
+            self._bot, min_id=after_id, limit=50, reverse=True
         )
-        result = await self._request(request, timeout, "the high scores")
-        names = {u.id: utils.get_display_name(u) for u in result.users}
-        return [
-            GameScore(s.pos, s.user_id, names.get(s.user_id, ""), s.score)
-            for s in result.scores
-        ]
+        for message in history:
+            action = getattr(message, "action", None)
+            if isinstance(action, types.MessageActionGameScore):
+                self._score_seen = message.id
+                if action.game_id == game_id:
+                    return action
+        return None
 
     async def open_web_app(self, text: str, timeout: float | None = None) -> str:
         """Open the web_app button `text` of the current message, return its URL.

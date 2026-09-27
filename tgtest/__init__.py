@@ -8,7 +8,7 @@ scenarios or as Python/pytest functions using the same client helpers.
 from .config import Settings
 from .logger import configure_logger
 from .client import BotTester, ReplyMatchError
-from .apps import GameScore, WebAppData, parse_web_app_data
+from .apps import WebAppData, parse_web_app_data
 from .scenario import Scenario, load_scenario, load_scenarios
 from .engine import run_scenario
 from .exceptions import (
@@ -24,7 +24,6 @@ __all__ = [
     "configure_logger",
     "BotTester",
     "ReplyMatchError",
-    "GameScore",
     "WebAppData",
     "parse_web_app_data",
     "Scenario",

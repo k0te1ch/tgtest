@@ -75,13 +75,13 @@ class _Steps:
     async def play(self):
         await self._check_url(await self.chat.play(timeout=self.timeout))
 
-    async def high_scores(self):
-        scores = await self.chat.high_scores(timeout=self.timeout)
-        least = int(self.opts.get("min_entries", 0))
-        if len(scores) < least:
-            raise AssertionError(
-                f"expected at least {least} high score entries, got {len(scores)}"
-            )
+    async def expect_game_score(self):
+        min_score = self.opts.get("min_score")
+        await self.chat.expect_game_score(
+            exact=int(self.value) if self.value is not None else None,
+            min_score=int(min_score) if min_score is not None else None,
+            timeout=self.timeout,
+        )
 
     async def open_web_app(self):
         url = await self.chat.open_web_app(str(self.value), timeout=self.timeout)

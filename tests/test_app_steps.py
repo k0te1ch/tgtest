@@ -3,7 +3,6 @@
 import pytest
 
 from tgtest import engine
-from tgtest.apps import GameScore
 from tgtest.engine import _Steps
 from tgtest.scenario import load_scenario, _parse_step
 
@@ -11,18 +10,18 @@ from tgtest.scenario import load_scenario, _parse_step
 class FakeChat:
     """Records calls and returns canned URLs / scores."""
 
-    def __init__(self, url="https://app.example/?start=ref42", scores=()):
+    def __init__(self, url="https://app.example/?start=ref42", score=120):
         self.url = url
-        self.scores = list(scores)
+        self.score = score
         self.calls = []
 
     async def play(self, timeout=None):
         self.calls.append(("play", timeout))
         return self.url
 
-    async def high_scores(self, timeout=None):
-        self.calls.append(("high_scores", timeout))
-        return self.scores
+    async def expect_game_score(self, exact=None, min_score=None, timeout=None):
+        self.calls.append(("expect_game_score", exact, min_score))
+        return self.score
 
     async def open_web_app(self, text, timeout=None):
         self.calls.append(("open_web_app", text))
@@ -74,12 +73,16 @@ async def test_open_app_step_passes_start_param():
     assert chat.calls == [("open_app", "arcade", "ref42")]
 
 
-async def test_high_scores_step_checks_min_entries():
-    chat = FakeChat(scores=[GameScore(1, 10, "Ann", 900)])
+async def test_expect_game_score_step_passes_exact_and_minimum():
+    chat = FakeChat()
 
-    await run(chat, {"high_scores": None, "min_entries": 1})
-    with pytest.raises(AssertionError, match="at least 2 high score entries, got 1"):
-        await run(chat, {"high_scores": None, "min_entries": 2})
+    await run(chat, {"expect_game_score": 120})
+    await run(chat, {"expect_game_score": None, "min_score": 100})
+
+    assert chat.calls == [
+        ("expect_game_score", 120, None),
+        ("expect_game_score", None, 100),
+    ]
 
 
 async def test_page_loads_opens_the_url(monkeypatch):
@@ -106,7 +109,7 @@ steps:
       game: snake
   - play:
     url_contains: "snake"
-  - high_scores:
+  - expect_game_score: 120
   - open_menu_app:
   - open_app: arcade
     start_param: ref42
@@ -120,7 +123,7 @@ steps:
         "command",
         "expect",
         "play",
-        "high_scores",
+        "expect_game_score",
         "open_menu_app",
         "open_app",
     ]

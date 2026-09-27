@@ -1,4 +1,4 @@
-"""play and high_scores against a fake client (no network)."""
+"""play and expect_game_score against a fake client (no network)."""
 
 import asyncio
 from dataclasses import dataclass
@@ -6,9 +6,8 @@ from dataclasses import dataclass
 import pytest
 from telethon.errors import BotResponseTimeoutError
 from telethon.tl import functions, types
-from telethon.tl.types.messages import BotCallbackAnswer, HighScores
+from telethon.tl.types.messages import BotCallbackAnswer
 
-from tgtest.apps import GameScore
 from tgtest.client import _Chat
 
 
@@ -40,10 +39,16 @@ class FakeConversation:
 class FakeClient:
     """Answers each request with a canned result (or raises it)."""
 
-    def __init__(self, result=None, delay: float = 0):
+    def __init__(self, result=None, delay: float = 0, history=()):
         self.result = result
         self.delay = delay
         self.requests = []
+        self.history = list(history)
+        self.reads = []
+
+    async def get_messages(self, chat, min_id, limit, reverse):
+        self.reads.append(min_id)
+        return [m for m in self.history if m.id > min_id][:limit]
 
     async def __call__(self, request):
         self.requests.append(request)
@@ -132,20 +137,66 @@ async def test_telegram_error_becomes_an_assertion():
         await chat.play()
 
 
-async def test_high_scores_joins_scores_with_user_names():
-    scores = HighScores(
-        scores=[types.HighScore(1, 10, 900), types.HighScore(2, 11, 450)],
-        users=[
-            types.User(10, first_name="Ann", last_name="Lee"),
-            types.User(11, first_name="Bob"),
-        ],
-    )
-    client = FakeClient(scores)
-    chat = await chat_after(game_message(), client=client)
+@dataclass
+class ServiceMessage:
+    id: int
+    action: object
 
-    table = await chat.high_scores()
 
-    assert table == [GameScore(1, 10, "Ann Lee", 900), GameScore(2, 11, "Bob", 450)]
-    [request] = client.requests
-    assert isinstance(request, functions.messages.GetGameHighScoresRequest)
-    assert (request.peer, request.id, request.user_id) == ("bot", 42, "me")
+def score(msg_id: int, points: int, game_id: int = 1) -> ServiceMessage:
+    return ServiceMessage(msg_id, types.MessageActionGameScore(game_id, points))
+
+
+async def score_chat(*history) -> _Chat:
+    chat = await chat_after(game_message(), client=FakeClient(history=history))
+    chat._poll_interval = 0.01
+    return chat
+
+
+async def test_score_message_of_the_last_game_is_returned():
+    chat = await score_chat(ServiceMessage(43, None), score(44, 120))
+
+    assert await chat.expect_game_score(exact=120, min_score=100) == 120
+    assert chat._client.reads == [42]
+
+
+async def test_each_score_message_is_consumed_once():
+    chat = await score_chat(score(44, 10), score(45, 30))
+
+    assert await chat.expect_game_score() == 10
+    assert await chat.expect_game_score() == 30
+    assert chat._client.reads == [42, 44]
+
+
+async def test_scores_of_other_games_are_skipped():
+    chat = await score_chat(score(44, 999, game_id=7), score(45, 5))
+
+    assert await chat.expect_game_score() == 5
+
+
+async def test_wrong_score_is_reported():
+    chat = await score_chat(score(44, 80))
+
+    with pytest.raises(AssertionError, match=r"expected: 100\n  actual:   80"):
+        await chat.expect_game_score(exact=100)
+
+
+async def test_score_below_minimum_is_reported():
+    chat = await score_chat(score(44, 80))
+
+    with pytest.raises(AssertionError, match="80 is below the minimum 100"):
+        await chat.expect_game_score(min_score=100)
+
+
+async def test_no_score_message_times_out():
+    chat = await score_chat(ServiceMessage(43, None))
+
+    with pytest.raises(AssertionError, match="timed out.*score message.*'snake'"):
+        await chat.expect_game_score(timeout=0.05)
+
+
+async def test_score_before_any_game():
+    chat = await chat_after(Message("hi"))
+
+    with pytest.raises(AssertionError, match="before any game message"):
+        await chat.expect_game_score()
