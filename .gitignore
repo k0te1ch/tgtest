@@ -317,3 +317,10 @@ __marimo__/
 # tgtest: Telethon session files (contain auth — never commit)
 *.session
 *.session-journal
+
+# AI assistant artifacts — do not commit
+CLAUDE.local.md
+.planning/
+.codeium/
+.mcp.json
+AISLOP.md
