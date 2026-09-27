@@ -36,6 +36,8 @@ import `app.py`, keeping `from examples.bot import text` aiogram-free.
 - `/game` sends the game `GAME_SHORT_NAME` (default `demo_game`, a placeholder:
   create the game with `/newgame` in @BotFather and set `GAME_SHORT_NAME` to
   its short name); pressing **Play** answers with `GAME_URL?user=<id>`
+- `/score N` calls `setGameScore` with N on the last game message (bare
+  `/score` sets the current score + 1), so Telegram posts a score message
 - `/app` sends an **Open app** button of type `web_app` opening `WEB_APP_URL`
   (default `https://example.com/app`)
 

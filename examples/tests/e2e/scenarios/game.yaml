@@ -9,4 +9,6 @@ steps:
       game: demo_game
   - play:
     url_regex: 'user=\d+'
-  - high_scores:
+  - command: score        # bare /score: the bot sets current score + 1
+  - expect_game_score:
+    min_score: 1

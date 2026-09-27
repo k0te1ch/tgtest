@@ -5,6 +5,7 @@ Run with:  python -m pytest examples/tests/e2e -m e2e
 """
 
 import os
+import time
 
 import pytest
 
@@ -54,7 +55,10 @@ async def test_game_play_returns_the_game_url(bot_process, tester):
         url = await chat.play()
         me = await tester.client.get_me()
         assert url.endswith(f"user={me.id}")
-        assert isinstance(await chat.high_scores(), list)
+
+        points = int(time.time()) % 1_000_000  # differs per run: setGameScore
+        await chat.command(f"score {points}")  # rejects an unchanged score
+        assert await chat.expect_game_score(exact=points) == points
 
 
 @pytest.mark.e2e
