@@ -5,6 +5,14 @@ class TgTestError(Exception):
     """Base class for all tgtest errors."""
 
 
+class SessionLockedError(TgTestError):
+    """Raised when the session file is already in use by another client."""
+
+
+class ConnectError(TgTestError):
+    """Raised when the client cannot reach Telegram in time."""
+
+
 class ScenarioError(TgTestError):
     """Raised when a YAML scenario is malformed or cannot be parsed."""
 

@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     api_hash: str
     # Telethon session file; created once by `python login.py`.
     session: str = "tgtest.session"
+    # Session as a string (`python login.py --string`). Takes precedence over
+    # `session` and has no file, so several clients can use it at once.
+    session_string: str | None = None
     # Phone of the test user account, used only for first-time login.
     phone: str | None = None
     # Bot used when a scenario / test does not name one explicitly.
@@ -27,6 +30,13 @@ class Settings(BaseSettings):
     proxy: str | None = None
     # Default per-step reply timeout, in seconds.
     timeout: float = 15.0
+    # How long to wait for the connection to Telegram, in seconds.
+    connect_timeout: float = 30.0
+    # Language the test account reports to Telegram. Bots see it as
+    # `from_user.language_code`; Telethon's default is "en".
+    lang_code: str | None = None
+    # Defaults to `lang_code`.
+    system_lang_code: str | None = None
     # Logging.
     app_name: str = "tgtest"
     log_level: str = "INFO"

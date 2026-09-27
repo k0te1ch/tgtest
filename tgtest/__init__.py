@@ -10,7 +10,13 @@ from .logger import configure_logger
 from .client import BotTester, ReplyMatchError
 from .scenario import Scenario, load_scenario, load_scenarios
 from .engine import run_scenario
-from .exceptions import TgTestError, StepError, ScenarioError
+from .exceptions import (
+    ConnectError,
+    ScenarioError,
+    SessionLockedError,
+    StepError,
+    TgTestError,
+)
 
 __all__ = [
     "Settings",
@@ -24,4 +30,6 @@ __all__ = [
     "TgTestError",
     "StepError",
     "ScenarioError",
+    "SessionLockedError",
+    "ConnectError",
 ]
