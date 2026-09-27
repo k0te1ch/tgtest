@@ -45,6 +45,12 @@ asyncio.run(main())
 - `tester.conversation(bot=None, timeout=None)` — async context manager
   yielding a `_Chat`. `bot` defaults to `TG_DEFAULT_BOT`; `timeout` defaults to
   `TG_TIMEOUT`.
+- `tester.client` — the connected Telethon `TelegramClient`, for anything tgtest
+  has no helper for. Use it rather than opening a second client on the same
+  session file (SQLite would fail with `database is locked`).
+- Connection problems raise `ConnectError` after `TG_CONNECT_TIMEOUT` with a
+  `TG_PROXY` hint; a session file used by another client raises
+  `SessionLockedError`.
 
 ## `_Chat` — the conversation helper
 
@@ -56,6 +62,7 @@ asyncio.run(main())
 |--------|-------------|
 | `await chat.send(text)` | Send literal text. |
 | `await chat.command(cmd)` | Send a `/command` (adds the `/` if missing). |
+| `await chat.send_file(file, caption=None, **kwargs)` | Send a file; extra kwargs go to Telethon's `send_file` (`force_document=True`, `voice_note=True`...). |
 
 ### Receiving & asserting
 

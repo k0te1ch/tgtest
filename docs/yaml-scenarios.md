@@ -63,6 +63,7 @@ keys.
 | Action | Value | Notes |
 |--------|-------|-------|
 | `send` | string | Send literal text. |
+| `send_file` | path | Send a file (audio, photo, document...). |
 | `command` | string | Send a `/command`; the leading `/` is added if missing. |
 | `expect` | matcher | Wait for the next reply, make it current, assert on it. |
 | `expect_edit` | matcher | Wait for the **current** message to be edited, assert on it. |
@@ -82,6 +83,8 @@ These may accompany any action:
 | `index` | `click` | Click the button at this 0-based position. |
 | `data` | `click` | Click the button with this callback `data`. |
 | `within` | `expect_no_reply` | Alternative to the inline value. |
+| `caption` | `send_file` | Caption for the file. |
+| `force_document` | `send_file` | Send as a document instead of media. |
 | `note` | any | Free-text shown in failure reports. |
 
 ### Step examples
