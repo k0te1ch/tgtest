@@ -14,6 +14,7 @@ Sources: [`tgtest/client.py`](../tgtest/client.py),
 from tgtest import (
     Settings, configure_logger,
     BotTester, ReplyMatchError,
+    WebAppData, parse_web_app_data,
     Scenario, load_scenario, load_scenarios, run_scenario,
     TgTestError, ScenarioError, StepError,
 )
@@ -77,7 +78,8 @@ asyncio.run(main())
 
 The `**matcher` keyword arguments are exactly the [matcher
 clauses](yaml-scenarios.md#matchers): `equals`, `contains`, `icontains`,
-`not_contains`, `regex`, `iregex`, `buttons`, `buttons_exact`, `has_buttons`.
+`not_contains`, `regex`, `iregex`, `buttons`, `buttons_exact`, `has_buttons`,
+`game`.
 
 ```python
 await chat.expect(contains="Welcome", buttons=["Settings", "Help"])
@@ -93,6 +95,20 @@ await chat.expect(regex=r"#\d+", has_buttons=True)
 | `await chat.click(data="cb")` | Click by callback `data`. |
 
 See [Buttons & keyboards](buttons-and-keyboards.md) for full semantics.
+
+### Games & Mini Apps
+
+| Method | Description |
+|--------|-------------|
+| `await chat.play(timeout=None)` | Press the game button of the last game message; returns the bot's URL. |
+| `await chat.expect_game_score(exact=None, min_score=None, timeout=None)` | Wait for the next score service message of the last game; returns the score. |
+| `await chat.open_web_app(text, timeout=None)` | Open a `web_app` button of the current message; returns the URL. |
+| `await chat.open_menu_app(timeout=None)` | Open the bot's menu button Mini App; returns the URL. |
+| `await chat.open_app(short_name, start_param=None, timeout=None)` | Open `t.me/<bot>/<short_name>`; returns the URL. |
+
+`parse_web_app_data(url)` turns the URL's `tgWebAppData` into a `WebAppData`
+(`user`, `start_param`, `auth_date`, `query_id`, `raw`). See
+[Games & Mini Apps](games-and-mini-apps.md).
 
 ## Assertions & exceptions
 

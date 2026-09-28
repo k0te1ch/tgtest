@@ -36,6 +36,10 @@ dependencies = [
   "python-socks[asyncio]>=2.4",
 ]
 
+[project.optional-dependencies]
+# Headless page checks for games and Mini Apps (tgtest.browser.assert_page_loads).
+browser = ["playwright>=1.40"]
+
 [project.urls]
 Homepage = "https://github.com/k0te1ch/tgtest"
 Repository = "https://github.com/k0te1ch/tgtest"

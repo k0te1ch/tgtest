@@ -26,6 +26,7 @@ Full docs live in [`docs/`](docs/README.md):
 [YAML scenarios](docs/yaml-scenarios.md) ·
 [Python API](docs/python-api.md) ·
 [Buttons & keyboards](docs/buttons-and-keyboards.md) ·
+[Games & Mini Apps](docs/games-and-mini-apps.md) ·
 [Bot integration](docs/bot-integration.md) ·
 [Example bot](docs/example-bot.md) ·
 [Architecture](docs/architecture.md) ·
@@ -105,6 +106,8 @@ steps:
 | `expect_no_reply: <sec>` | Assert nothing arrives within N seconds. |
 | `click: <label>` | Click an inline button by label (or `click:` with `index:` / `data:`). |
 | `sleep: <sec>` | Pause. |
+| `play`, `expect_game_score` | Press a game's Play button / wait for a score message ([Games & Mini Apps](docs/games-and-mini-apps.md)). |
+| `open_web_app: <label>`, `open_menu_app`, `open_app: <name>` | Open a Mini App and check its URL. |
 
 Any step may carry a `timeout:` (override) and a `note:` (shown in reports).
 
@@ -116,6 +119,7 @@ A matcher is a string (shorthand for `equals`) or a mapping of:
 - `regex`, `iregex` (case-insensitive)
 - `buttons: [..]` (all must be present), `buttons_exact: [..]` (whole keyboard, in order)
 - `has_buttons: true|false`
+- `game: <short_name>` (the reply carries this game)
 
 Multiple clauses in one `expect` must **all** pass.
 
@@ -151,7 +155,9 @@ Unit tests for the matchers, scenario parser, and config are **not** marked
 ### `_Chat` helper API
 `send`, `command`, `get_reply`, `expect(**matcher)`, `expect_edit(**matcher)`,
 `expect_no_reply(within=)`, `expect_buttons(*labels, exact=)`,
-`click(text=/index=/data=)`. `chat.last` is the most recent `Message`.
+`click(text=/index=/data=)`, `play()`, `expect_game_score()`, `open_web_app(text)`,
+`open_menu_app()`, `open_app(short_name, start_param=)`. `chat.last` is the most
+recent `Message`.
 
 ## Using tgtest inside a bot project (next to unit tests)
 
@@ -301,6 +307,8 @@ tgtest/            the package
   matchers.py      text/button matchers
   scenario.py      YAML → Scenario model
   engine.py        runs a Scenario against a chat
+  apps.py          games (play, high scores) and Mini Apps (web views)
+  browser.py       optional headless page check (browser extra)
   cli.py           `tgtest run ...` entry point
   pytest_plugin.py fixtures: tg_config, tester, run_yaml
 main.py            entry point (delegates to the CLI)

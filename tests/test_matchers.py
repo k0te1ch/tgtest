@@ -59,3 +59,27 @@ def test_unknown_key_raises():
 
     with pytest.raises(ValueError):
         Matcher.from_spec({"bogus": 1})
+
+
+def _game_msg(short_name):
+    from telethon.tl.types import Game, MessageMediaGame, PhotoEmpty
+
+    game = Game(1, 2, short_name, "Title", "Description", PhotoEmpty(0))
+    msg = _Msg("")
+    msg.media = MessageMediaGame(game)
+    return msg
+
+
+def test_game_short_name_matches():
+    assert Matcher.from_spec({"game": "snake"}).check(_game_msg("snake")) is None
+
+
+def test_other_game_is_reported():
+    reason = Matcher.from_spec({"game": "snake"}).check(_game_msg("tetris"))
+    assert "expected: 'snake'" in reason
+    assert "actual:   'tetris'" in reason
+
+
+def test_message_without_game_is_reported():
+    reason = Matcher.from_spec({"game": "snake"}).check(_Msg("hi"))
+    assert "has no game (media: none)" in reason
