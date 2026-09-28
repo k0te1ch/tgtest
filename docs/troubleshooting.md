@@ -131,9 +131,46 @@ creates its own `TelegramClient` next to the `tester` fixture. Use
 
 ## The bot answers in the wrong language
 
-Bots usually pick the language from `from_user.language_code`, which Telegram
-takes from the client (Telethon reports `en`). Set `TG_LANG_CODE=ru` (and
-`TG_SYSTEM_LANG_CODE` if it should differ).
+Bots usually pick the language from `from_user.language_code`. Telegram fills it
+from the user's connections, not per message, and tgtest can only influence the
+`initConnection` it sends: `TG_LANG_CODE`, `TG_SYSTEM_LANG_CODE` and
+`TG_LANG_PACK`.
+
+What is known so far:
+
+- Telethon reports `lang_code="en"` by default and always sends an empty
+  `lang_pack` ("language packs are for official apps only").
+- A test account that once connected with `lang_code=en` was seen by bots as
+  `en` afterwards, and connecting again with `TG_LANG_CODE=ru` did not bring
+  `ru` back. So the value sticks to the account (or its authorization) rather
+  than following each connection.
+- The official apps send a non-empty `lang_pack` (`android`, `ios`,
+  `tdesktop`, ...). Setting `TG_LANG_PACK=android` together with
+  `TG_LANG_CODE=ru` makes the connection look like theirs; this is the first
+  thing to try. It is not verified that Telegram updates `language_code` from it.
+- Logging in to the account in an official app with the interface in the wanted
+  language, and sending the bot a message from there, resets it the way a real
+  user would.
+
+Set the language once, before the first login (`python login.py` honors the
+same settings), and keep it the same for every run. Then check what the bot
+actually sees instead of assuming it:
+
+```python
+async with tester.conversation("@my_bot") as chat:
+    lang = await chat.detect_language({"ru": "привет", "en": "hello"})
+    if lang != "ru":
+        pytest.skip(f"the bot sees the account as {lang!r}, not 'ru'")
+```
+
+If the bot under test can be told the language directly (a `/lang` command or a
+setting), prefer that in e2e tests: it does not depend on Telegram at all.
+
+## A session file fails with "too many values to unpack"
+
+Telethon 1.43 changed the SQLite session layout; an older Telethon cannot
+read a session file that 1.43 has saved. tgtest requires `telethon>=1.43`, so
+keep every project that shares the session on 1.43 or newer.
 
 ## Where to look
 
